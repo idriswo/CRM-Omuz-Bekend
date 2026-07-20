@@ -56,9 +56,9 @@
 - [x] **Пӯшидани TODO-и Phase 2:** `GET /branches` бо `_count` (groups/students), `GET /branches/chart?year=` амалӣ карда шуд
 
 ## Phase 5 — Employees / Mentors (`/employees`)
-- [ ] Prisma model `Employee`, `MentorLevel`
-- [ ] CRUD `/employees`
-- [ ] `GET /employees/mentor-levels`, `PUT /employees/mentor-levels/:id`
+- [x] Prisma model `Employee`, `MentorLevel`
+- [x] CRUD `/employees` (search, branch_id, position)
+- [x] `GET /employees/mentor-levels`, `PUT /employees/mentor-levels/:id`
 
 ## Phase 6 — Groups + Journal (`/groups`)
 - [x] Prisma model `Group` (сохта шуд дар Phase 4)

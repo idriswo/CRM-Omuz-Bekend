@@ -13,8 +13,9 @@ model Branch {
   city     String
   district String
   address  String
-  students Student[]
-  groups   Group[]
+  students  Student[]
+  groups    Group[]
+  employees Employee[]
 }
 
 model Course {
@@ -107,6 +108,27 @@ model Coupon {
   lead_id    Int?
   lead       Lead?    @relation(fields: [lead_id], references: [id])
   created_at DateTime @default(now())
+}
+
+model Employee {
+  id          Int           @id @default(autoincrement())
+  first_name  String
+  last_name   String
+  position    String
+  experience  Int?
+  branch_id   Int?
+  branch      Branch?       @relation(fields: [branch_id], references: [id])
+  phone       String
+  email       String?
+  mentor_level MentorLevel?
+  created_at  DateTime      @default(now())
+}
+
+model MentorLevel {
+  id          Int      @id @default(autoincrement())
+  employee_id Int      @unique
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  level       String
 }
 
 model User {

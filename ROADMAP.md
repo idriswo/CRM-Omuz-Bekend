@@ -62,12 +62,12 @@
 
 ## Phase 6 — Groups + Journal (`/groups`)
 - [x] Prisma model `Group` (сохта шуд дар Phase 4)
-- [ ] Prisma models `JournalWeek`, `JournalEntry`
-- [ ] CRUD `/groups`
-- [ ] `GET /groups/:id/journal`
-- [ ] `POST /groups/:id/journal/week`
-- [ ] `PUT /groups/:id/journal/:weekId/students/:studentId` (upsert)
-- [ ] `GET /groups/stats`
+- [x] Prisma models `JournalWeek`, `JournalEntry` (бо `@@unique([week_id, student_id, day_date])`)
+- [x] CRUD `/groups` (search/course_id/branch_id/status/tag)
+- [x] `GET /groups/:id/journal`
+- [x] `POST /groups/:id/journal/week`
+- [x] `PUT /groups/:id/journal/:weekId/students/:studentId` (upsert)
+- [x] `GET /groups/stats`
 
 ## Phase 7 — Timetable (`/timetable`)
 - [ ] Prisma model `TimetableEntry`

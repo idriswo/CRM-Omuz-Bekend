@@ -43,9 +43,10 @@ model Student {
   branch_id     Int?
   branch        Branch?       @relation(fields: [branch_id], references: [id])
   groups        Group[]       @relation("StudentGroups")
-  contracts     Contract[]
-  graduate_info GraduateInfo?
-  created_at    DateTime      @default(now())
+  contracts       Contract[]
+  graduate_info   GraduateInfo?
+  journal_entries JournalEntry[]
+  created_at      DateTime       @default(now())
 }
 
 model Contract {
@@ -67,23 +68,46 @@ model GraduateInfo {
   tag             String?
 }
 
-// Модели пурраи Group (аз боби 4-и TZ), пешакӣ дар ин ҷо оварда шуд, зеро Students.enroll ба он ниёз дорад.
-// JournalWeek/JournalEntry ва endpoint-ҳои журнал дар Phase 6 илова мешаванд.
 model Group {
-  id                Int      @id @default(autoincrement())
+  id                Int           @id @default(autoincrement())
   name              String
   course_id         Int
-  course            Course   @relation(fields: [course_id], references: [id])
+  course            Course        @relation(fields: [course_id], references: [id])
   start_date        DateTime
   end_date          DateTime
   duration          String
   required_students Int
   branch_id         Int
-  branch            Branch   @relation(fields: [branch_id], references: [id])
-  status            String   @default("active")
+  branch            Branch        @relation(fields: [branch_id], references: [id])
+  status            String        @default("active")
   tag               String?
-  students          Student[] @relation("StudentGroups")
-  created_at        DateTime @default(now())
+  students          Student[]     @relation("StudentGroups")
+  weeks             JournalWeek[]
+  created_at        DateTime      @default(now())
+}
+
+model JournalWeek {
+  id          Int            @id @default(autoincrement())
+  group_id    Int
+  group       Group          @relation(fields: [group_id], references: [id])
+  week_number Int
+  dates       DateTime[]
+  entries     JournalEntry[]
+}
+
+model JournalEntry {
+  id         Int         @id @default(autoincrement())
+  week_id    Int
+  week       JournalWeek @relation(fields: [week_id], references: [id])
+  student_id Int
+  student    Student     @relation(fields: [student_id], references: [id])
+  day_date   DateTime
+  attendance Boolean
+  score      Int?
+  bonus      Int?
+  exam       Int?
+
+  @@unique([week_id, student_id, day_date])
 }
 
 model Lead {

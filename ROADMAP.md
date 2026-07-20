@@ -35,13 +35,13 @@
 - [ ] **TODO баъдтар:** ба `GET /branches` counts (`_count: { groups, students }`) илова кунед, вақте Group/Student моделҳо тайёр шаванд
 
 ## Phase 3 — Courses & Leads (`/courses`, `/leads`)
-- [ ] Prisma models `Course`, `Lead`, `Coupon`
-- [ ] CRUD `/courses`
-- [ ] CRUD `/leads` (list бо pagination/search)
-- [ ] `POST /leads/:id/convert-to-client`
-- [ ] `POST /leads/transfer`
-- [ ] `GET /leads/coupons`, `POST /leads/coupons`
-- [ ] Export leads (xlsx)
+- [x] Prisma models `Course`, `Lead`, `Coupon`
+- [x] CRUD `/courses`
+- [x] CRUD `/leads` (list бо pagination/search/course_id/type/utm_source)
+- [x] `POST /leads/:id/convert-to-client` (⚠️ сохтани Student аз лид дар Phase 4 илова мешавад)
+- [x] `POST /leads/transfer`
+- [x] `GET /leads/coupons`, `POST /leads/coupons`
+- [x] Export leads (xlsx) — `GET /leads/export`
 
 ## Phase 4 — Students (`/students`)
 - [ ] Prisma model `Student` (+ Contract)

@@ -15,6 +15,40 @@ model Branch {
   address  String
 }
 
+model Course {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  duration    String
+  price       Int
+  leads       Lead[]
+  // groups Group[] — пас аз сохтани модели Group (Phase 6) илова мешавад
+}
+
+model Lead {
+  id          Int      @id @default(autoincrement())
+  full_name   String
+  phone       String
+  lesson_time String?
+  course_id   Int?
+  course      Course?  @relation(fields: [course_id], references: [id])
+  utm_source  String?
+  occupation  String?
+  notes       String?
+  type        String   @default("Lead") // Lead|Client
+  coupons     Coupon[]
+  created_at  DateTime @default(now())
+}
+
+model Coupon {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  discount   Int // фоиз ё маблағи тахфиф
+  lead_id    Int?
+  lead       Lead?    @relation(fields: [lead_id], references: [id])
+  created_at DateTime @default(now())
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   phone         String   @unique

@@ -25,12 +25,14 @@
 - [x] `POST /auth/logout`
 
 ## Phase 2 — Branches (`/branches`)
-- [ ] Prisma model `Branch`
-- [ ] `GET /branches` (бо groups_count/students_count)
-- [ ] `POST /branches`
-- [ ] `PUT /branches/:id`
-- [ ] `DELETE /branches/:id`
-- [ ] `GET /branches/chart?year=`
+- [x] Prisma model `Branch`
+- [x] `GET /branches` (⚠️ бе groups_count/students_count то ҳол — вобаста ба Phase 4/6)
+- [x] `GET /branches/:id`
+- [x] `POST /branches`
+- [x] `PUT /branches/:id`
+- [x] `DELETE /branches/:id`
+- [ ] `GET /branches/chart?year=` — stub (501), баъд аз Phase 4 (Student) пур карда мешавад
+- [ ] **TODO баъдтар:** ба `GET /branches` counts (`_count: { groups, students }`) илова кунед, вақте Group/Student моделҳо тайёр шаванд
 
 ## Phase 3 — Courses & Leads (`/courses`, `/leads`)
 - [ ] Prisma models `Course`, `Lead`, `Coupon`

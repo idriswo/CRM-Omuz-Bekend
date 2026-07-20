@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Branch {
+  id       Int    @id @default(autoincrement())
+  title    String
+  city     String
+  district String
+  address  String
+}
+
 model User {
   id            Int      @id @default(autoincrement())
   phone         String   @unique

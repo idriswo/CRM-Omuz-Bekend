@@ -8,11 +8,13 @@ datasource db {
 }
 
 model Branch {
-  id       Int    @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   title    String
   city     String
   district String
   address  String
+  students Student[]
+  groups   Group[]
 }
 
 model Course {
@@ -22,7 +24,65 @@ model Course {
   duration    String
   price       Int
   leads       Lead[]
-  // groups Group[] — пас аз сохтани модели Group (Phase 6) илова мешавад
+  groups      Group[]
+}
+
+model Student {
+  id            Int           @id @default(autoincrement())
+  first_name    String
+  last_name     String
+  birth_date    DateTime
+  gender        String
+  address       String?
+  email         String?
+  phone         String
+  father_phone  String?
+  photo         String?
+  status        String        @default("active") // active|inactive|finished
+  branch_id     Int?
+  branch        Branch?       @relation(fields: [branch_id], references: [id])
+  groups        Group[]       @relation("StudentGroups")
+  contracts     Contract[]
+  graduate_info GraduateInfo?
+  created_at    DateTime      @default(now())
+}
+
+model Contract {
+  id         Int      @id @default(autoincrement())
+  student_id Int
+  student    Student  @relation(fields: [student_id], references: [id])
+  start_date DateTime
+  end_date   DateTime
+  created_at DateTime @default(now())
+}
+
+// Тибқи ишораи TZ: "дар як ҷадвали алоҳидаи GraduateInfo (ё майдонҳои иловагӣ дар Student)"
+model GraduateInfo {
+  id              Int     @id @default(autoincrement())
+  student_id      Int     @unique
+  student         Student @relation(fields: [student_id], references: [id])
+  work_place      String?
+  has_certificate Boolean @default(false)
+  tag             String?
+}
+
+// Модели пурраи Group (аз боби 4-и TZ), пешакӣ дар ин ҷо оварда шуд, зеро Students.enroll ба он ниёз дорад.
+// JournalWeek/JournalEntry ва endpoint-ҳои журнал дар Phase 6 илова мешаванд.
+model Group {
+  id                Int      @id @default(autoincrement())
+  name              String
+  course_id         Int
+  course            Course   @relation(fields: [course_id], references: [id])
+  start_date        DateTime
+  end_date          DateTime
+  duration          String
+  required_students Int
+  branch_id         Int
+  branch            Branch   @relation(fields: [branch_id], references: [id])
+  status            String   @default("active")
+  tag               String?
+  students          Student[] @relation("StudentGroups")
+  created_at        DateTime @default(now())
 }
 
 model Lead {

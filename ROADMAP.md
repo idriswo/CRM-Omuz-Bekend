@@ -44,14 +44,16 @@
 - [x] Export leads (xlsx) — `GET /leads/export`
 
 ## Phase 4 — Students (`/students`)
-- [ ] Prisma model `Student` (+ Contract)
-- [ ] `GET /students` (pagination/search/course_id/group_id/contract_status)
-- [ ] `POST /students` (multipart/form-data, multer)
-- [ ] `PUT /students/:id`, `DELETE /students/:id`
-- [ ] `GET /students/graduates`
-- [ ] `PUT /students/graduates/:id`
-- [ ] `GET /students/graduates/stats`
-- [ ] `POST /students/enroll`
+- [x] Prisma models `Student`, `Contract`, `GraduateInfo`
+- [x] Prisma model `Group` (пешакӣ оварда шуд аз боби 4, бе journal — ниг. Phase 6)
+- [x] `GET /students` (pagination/search/course_id/group_id/status/contract_status)
+- [x] `POST /students` (multipart/form-data, multer → `/uploads`)
+- [x] `PUT /students/:id`, `DELETE /students/:id`
+- [x] `GET /students/graduates`
+- [x] `PUT /students/graduates/:id`
+- [x] `GET /students/graduates/stats`
+- [x] `POST /students/enroll`
+- [x] **Пӯшидани TODO-и Phase 2:** `GET /branches` бо `_count` (groups/students), `GET /branches/chart?year=` амалӣ карда шуд
 
 ## Phase 5 — Employees / Mentors (`/employees`)
 - [ ] Prisma model `Employee`, `MentorLevel`
@@ -59,7 +61,8 @@
 - [ ] `GET /employees/mentor-levels`, `PUT /employees/mentor-levels/:id`
 
 ## Phase 6 — Groups + Journal (`/groups`)
-- [ ] Prisma models `Group`, `JournalWeek`, `JournalEntry`
+- [x] Prisma model `Group` (сохта шуд дар Phase 4)
+- [ ] Prisma models `JournalWeek`, `JournalEntry`
 - [ ] CRUD `/groups`
 - [ ] `GET /groups/:id/journal`
 - [ ] `POST /groups/:id/journal/week`

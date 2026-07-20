@@ -58,7 +58,9 @@ export const convertLeadToClient = async (req: Request, res: Response) => {
     where: { id: Number(req.params.id) },
     data: { type: "Client" },
   });
-  // ⚠️ Сохтани Student аз рӯи ин лид дар Phase 4 (баъд аз тайёр шудани модели Student) илова мешавад
+  // Эзоҳ: Student на худкор сохта мешавад, зеро Student ба birth_date/gender ниёз дорад,
+  // ки дар Lead вуҷуд надоранд. Пас аз ин, корбар донишҷӯро тавассути POST /students/enroll
+  // (бо student_id холӣ, new_student пур) месозад ва ба гурӯҳ пайваст мекунад.
   res.json(lead);
 };
 

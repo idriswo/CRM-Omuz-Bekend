@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 
 export const getBranches = async (_req: Request, res: Response) => {
-  // ⚠️ _count (groups/students) илова мешавад пас аз сохтани моделҳои Group/Student (Phase 4/6)
-  const branches = await prisma.branch.findMany({ orderBy: { id: "desc" } });
+  const branches = await prisma.branch.findMany({
+    orderBy: { id: "desc" },
+    include: { _count: { select: { groups: true, students: true } } },
+  });
   res.json(branches);
 };
 
@@ -33,7 +35,22 @@ export const deleteBranch = async (req: Request, res: Response) => {
   res.json({ success: true });
 };
 
-export const getBranchesChart = async (_req: Request, res: Response) => {
-  // TODO(Phase 4/6): пас аз сохтани модели Student, groupBy(['branch_id','month']) илова кунед
-  res.status(501).json({ message: "Ҳанӯз амалӣ нашудааст — ба Student вобаста аст (Phase 4)" });
+export const getBranchesChart = async (req: Request, res: Response) => {
+  const year = Number(req.query.year) || new Date().getFullYear();
+  const start = new Date(`${year}-01-01T00:00:00.000Z`);
+  const end = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+
+  const students = await prisma.student.findMany({
+    where: { created_at: { gte: start, lt: end } },
+    select: { branch_id: true, created_at: true },
+  });
+
+  const result: Record<string, Record<number, number>> = {};
+  for (const s of students) {
+    const month = s.created_at.getMonth() + 1;
+    const key = String(s.branch_id ?? "unknown");
+    result[key] = result[key] || {};
+    result[key][month] = (result[key][month] || 0) + 1;
+  }
+  res.json(result);
 };

@@ -8,21 +8,21 @@
 ---
 
 ## Phase 0 — Скелети лоиҳа (project scaffolding)
-- [ ] package.json, tsconfig.json
-- [ ] Prisma init + schema.prisma (базавӣ)
-- [ ] Express app (`src/app.ts`, `src/server.ts`)
-- [ ] `src/utils/pagination.ts` (getPagination, buildEnvelope)
-- [ ] `src/utils/export.ts` (exportToXlsx)
-- [ ] `src/middlewares/auth.middleware.ts` (JWT)
-- [ ] `.env.example`, `.gitignore`
+- [x] package.json, tsconfig.json
+- [x] Prisma init + schema.prisma (базавӣ)
+- [x] Express app (`src/app.ts`, `src/server.ts`)
+- [x] `src/utils/pagination.ts` (getPagination, buildEnvelope)
+- [x] `src/utils/export.ts` (exportToXlsx)
+- [x] `src/middlewares/auth.middleware.ts` (JWT)
+- [x] `.env.example`, `.gitignore`
 
 ## Phase 1 — Auth (`/auth`)
-- [ ] Prisma model `User`
-- [ ] `POST /auth/register`
-- [ ] `POST /auth/login`
-- [ ] `POST /auth/refresh-token`
-- [ ] `POST /auth/forgot-password`
-- [ ] `POST /auth/logout`
+- [x] Prisma model `User` (+ `refresh_token` барои иваз кардани токен)
+- [x] `POST /auth/register`
+- [x] `POST /auth/login`
+- [x] `POST /auth/refresh-token`
+- [x] `POST /auth/forgot-password` (сохтори асосӣ тайёр; фиристодани воқеии SMS дар Phase 10 пайваст мешавад)
+- [x] `POST /auth/logout`
 
 ## Phase 2 — Branches (`/branches`)
 - [ ] Prisma model `Branch`

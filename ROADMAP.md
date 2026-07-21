@@ -155,6 +155,14 @@ _Дархости иловагии корбар (2026-07-21): "4 ta roll hast st
 - [x] RBAC ба ҳамаи роутҳо пайваст шуд: Branches/Courses/Leads/Employees/Groups/Timetable/SMS/Dashboard → admin+superadmin+director; Payments/Accounting → фақат superadmin+director; Administration → фақат superadmin+director
 - ⚠️ **Маҳдудият:** "late" (дер омадан) дар JournalEntry вуҷуд надорад (танҳо `attendance: Boolean`) — бинобар ин шарти coin танҳо ба ҳозирӣ+балл такя мекунад, на ба дер омадан (ҳамон маҳдудияти Dashboard дар Phase 11)
 
+## Phase 16 — Бехатарии иловагӣ (пас аз Phase 15)
+_Дархости корбар: "hamasha soz kun ki bexatar wavad ва барои director ном/парoли пешфарз (по умолчанию)"_
+
+- [x] `SEED_DIRECTOR_PHONE`/`SEED_DIRECTOR_PASSWORD` дар `render.yaml` акнун қиммати **маълум** доранд (на random) — `900000000` / `Director@2026!` — то дастрас бошад бе кофтани Render dashboard
+- [x] `POST /auth/change-password` илова шуд (ҳифзшуда бо `authMiddleware`) — ҳар корбар (аз ҷумла director) метавонад пас аз аввалин вуруд паролии пешфарзро иваз кунад
+- [x] Тасдиқ карда шуд: `ROLE_CREATE_MATRIX` аллакай иҷозат медиҳад, ки director → superadmin/admin/student-ро сабт/нест кунад (аз Phase 15)
+- ⚠️ **Тавсия ба корбар:** дарҳол пас аз аввалин deploy, бо `900000000` / `Director@2026!` ворид шавед ва тавассути `POST /auth/change-password` паролро иваз кунед — парол дар код/render.yaml навишта шудааст, пас маълум аст ва бояд танҳо барои бутстрап истифода шавад
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

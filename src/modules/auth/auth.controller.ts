@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../utils/prisma";
+import { AuthRequest } from "../../middlewares/auth.middleware";
 
 const ACCESS_TOKEN_TTL = (process.env.ACCESS_TOKEN_TTL || "3h") as jwt.SignOptions["expiresIn"];
 const REFRESH_TOKEN_TTL = (process.env.REFRESH_TOKEN_TTL || "7d") as jwt.SignOptions["expiresIn"];
@@ -84,4 +85,16 @@ export const logout = async (req: Request, res: Response) => {
   const { user_id } = req.body;
   await prisma.user.update({ where: { id: user_id }, data: { refresh_token: null } });
   res.json({ success: true });
+};
+
+// POST /auth/change-password — ҳар корбари ворид шуда паролии худро иваз мекунад
+export const changePassword = async (req: AuthRequest, res: Response) => {
+  const { old_password, new_password } = req.body;
+  const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!user || !(await bcrypt.compare(old_password, user.password))) {
+    return res.status(401).json({ message: "Паролии кӯҳна хато аст" });
+  }
+  const hashed = await bcrypt.hash(new_password, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { password: hashed, refresh_token: null } });
+  res.json({ success: true, message: "Парол иваз шуд. Бо парoли нав дубора ворид шавед." });
 };

@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { register, login, refreshToken, forgotPassword, logout } from "./auth.controller";
+import { authMiddleware } from "../../middlewares/auth.middleware";
+import { register, login, refreshToken, forgotPassword, logout, changePassword } from "./auth.controller";
 
 const router = Router();
 
@@ -58,5 +59,18 @@ router.post("/forgot-password", forgotPassword);
  *       200: { description: OK }
  */
 router.post("/logout", logout);
+
+/**
+ * @openapi
+ * /auth/change-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Иваз кардани паролии худи корбари ворид шуда (лозим аст токен)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Парол иваз шуд }
+ *       401: { description: Паролии кӯҳна хато аст }
+ */
+router.post("/change-password", authMiddleware, changePassword);
 
 export default router;

@@ -15,7 +15,7 @@ async function main() {
 
   // Бутстрап: аввалин director, то касе тавонад аз /users дигар корбаронро идора кунад
   const DIRECTOR_PHONE = process.env.SEED_DIRECTOR_PHONE || "900000000";
-  const DIRECTOR_PASSWORD = process.env.SEED_DIRECTOR_PASSWORD || "director123";
+  const DIRECTOR_PASSWORD = process.env.SEED_DIRECTOR_PASSWORD || "Director@2026!";
 
   const existingDirector = await prisma.user.findUnique({ where: { phone: DIRECTOR_PHONE } });
   if (!existingDirector) {

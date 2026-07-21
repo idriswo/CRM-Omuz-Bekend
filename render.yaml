@@ -21,7 +21,7 @@ services:
       - key: SEED_DIRECTOR_PHONE
         value: 900000000
       - key: SEED_DIRECTOR_PASSWORD
-        generateValue: true
+        value: "Director@2026!"
       - key: PORT
         value: 4000
 

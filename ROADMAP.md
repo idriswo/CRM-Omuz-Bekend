@@ -131,6 +131,30 @@ _Дархости иловагии корбар (2026-07-21): "refreshtoken, acc
 - [x] `refresh_token` → **1 ҳафта** (пештар 30 рӯз буд)
 - Ҷойгиршуда дар `src/modules/auth/auth.controller.ts` (константаҳои `ACCESS_TOKEN_TTL`/`REFRESH_TOKEN_TTL`), истифода дар `login` ва `refreshToken`
 
+## Phase 15 — RBAC (4 нақш) + Coin система
+_Дархости иловагии корбар (2026-07-21): "4 ta roll hast student, admin, superadmin, director ..."_
+
+**Иерархияи нақшҳо:**
+- `student` — фақат маълумоти худашро мебинад: баллҳо/давомот, гурӯҳҳо, ҳамкурсҳо, coin
+- `admin` — CRUD дар Students/Groups/Journal/Branches/Courses/Leads/Employees/Timetable/SMS/Dashboard; **дастрасӣ надорад** ба Payments/Accounting (ойлик/финанс); илова кардани донишҷӯ вобаста ба toggle-и `can_add_students`
+- `superadmin` — ҳама чизи admin + Payments/Accounting + идораи `admin`/`student` (сохтан/нест кардан) + toggle-и `can_add_students`
+- `director` — дастрасии пурра ба ҳама чиз, аз ҷумла идораи `superadmin`/`admin`/`student`
+
+**Татбиқ:**
+- [x] `prisma/schema.prisma`: `User.student_id` (пайваст ба Student), `User.can_add_students`, модели `CoinTransaction`, `Student.coin_balance`
+- [x] `src/constants/roles.ts` — ROLES, ROLE_CREATE_MATRIX (кӣ киро сабт/нест карда метавонад)
+- [x] `prisma/seed.ts` — сохтани 4 Role + бутстрап-и аввалин `director` (аз `SEED_DIRECTOR_PHONE`/`SEED_DIRECTOR_PASSWORD`)
+- [x] `src/middlewares/rbac.middleware.ts` — `authorize()`, `selfStudentOr()`, `requireCanAddStudents()`
+- [x] JWT (login/refresh) акнун `role` (номи он) ва `student_id`-ро дар бар мегирад
+- [x] `/auth/register` дигар `role_id`-ро аз body қабул намекунад (то касе худро director эълон накунад) — таъини нақш танҳо тавассути `/users` (бо иерархия)
+- [x] `POST /students` акнун login (User бо role=student)-ро низ худкор месозад ва `login_credentials`-ро дар ҷавоб бармегардонад
+- [x] `/students/me`, `/me/groups`, `/me/groupmates`, `/me/scores`, `/me/coins` — self-service барои student
+- [x] `PUT /users/:id/toggle-add-students` — фаъол/хомӯш кардани иҷозати admin
+- [x] `POST/GET /students/:id/coins`, `POST /students/:id/coins/spend` — иловаи дастӣ/харҷ/дидан
+- [x] Coin-и худкор (10 адад): дар `upsertJournalEntry`, вақте ҳафта пур шуд — агар ҳамаи рӯзҳо attendance=true бошанд ва миёнаи балл >90
+- [x] RBAC ба ҳамаи роутҳо пайваст шуд: Branches/Courses/Leads/Employees/Groups/Timetable/SMS/Dashboard → admin+superadmin+director; Payments/Accounting → фақат superadmin+director; Administration → фақат superadmin+director
+- ⚠️ **Маҳдудият:** "late" (дер омадан) дар JournalEntry вуҷуд надорад (танҳо `attendance: Boolean`) — бинобар ин шарти coin танҳо ба ҳозирӣ+балл такя мекунад, на ба дер омадан (ҳамон маҳдудияти Dashboard дар Phase 11)
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

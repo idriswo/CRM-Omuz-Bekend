@@ -1,8 +1,12 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
+import { authorize } from "../../middlewares/rbac.middleware";
+import { ROLES } from "../../constants/roles";
 import { getPayments, createPayment, updatePayment, deletePayment, exportPayments } from "./payments.controller";
 
 const router = Router();
+// Финанс — фақат superadmin ва director (тибқи дархости корбар: admin ба он дастрасӣ надорад)
+router.use(authorize(ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi

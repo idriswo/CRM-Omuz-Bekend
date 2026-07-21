@@ -51,7 +51,22 @@ model Student {
   journal_entries JournalEntry[]
   payments        Payment[]
   debtors         Debtor[]
-  created_at      DateTime       @default(now())
+  user            User? // login-и донишҷӯ (агар superadmin/admin барояш сохта бошад)
+  coin_balance      Int                @default(0)
+  coin_transactions CoinTransaction[]
+  created_at        DateTime           @default(now())
+}
+
+// Ledger-и coin: ҳам бонуси худкори ҳафтагӣ, ҳам иловаи дастӣ, ҳам харҷ (spend)
+model CoinTransaction {
+  id         Int      @id @default(autoincrement())
+  student_id Int
+  student    Student  @relation(fields: [student_id], references: [id])
+  amount     Int // + барои earn, - барои spend
+  type       String // auto_weekly | manual | spend
+  reason     String?
+  created_by Int? // user_id-и админе, ки илова/харҷ кардааст (барои manual/spend)
+  created_at DateTime @default(now())
 }
 
 model Contract {
@@ -258,16 +273,21 @@ model SmsHistory {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  phone         String   @unique
-  password      String
-  full_name     String
-  role_id       Int?
-  role          Role?    @relation(fields: [role_id], references: [id])
-  branch_id     Int?
-  refresh_token String?
-  logs          Log[]
-  created_at    DateTime @default(now())
+  id                Int      @id @default(autoincrement())
+  phone             String   @unique
+  password          String
+  full_name         String
+  role_id           Int?
+  role              Role?    @relation(fields: [role_id], references: [id])
+  branch_id         Int?
+  // Агар role=student бошад, ин ба профили Student пайваст мешавад
+  student_id        Int?     @unique
+  student           Student? @relation(fields: [student_id], references: [id])
+  // Танҳо барои role=admin маъно дорад: superadmin/director метавонанд ин имконро хомӯш/фаъол кунанд
+  can_add_students  Boolean  @default(true)
+  refresh_token     String?
+  logs              Log[]
+  created_at        DateTime @default(now())
 }
 
 model Role {

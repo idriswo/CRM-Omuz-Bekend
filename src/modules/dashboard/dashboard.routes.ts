@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { authorize } from "../../middlewares/rbac.middleware";
+import { ROLES } from "../../constants/roles";
 import {
   getDashboardStats,
   getAttendanceLog,
@@ -12,6 +14,7 @@ import {
 } from "./dashboard.controller";
 
 const router = Router();
+router.use(authorize(ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi

@@ -1,11 +1,16 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
-import { getUsers, createUser, updateUser, deleteUser } from "./users.controller";
+import { authorize } from "../../middlewares/rbac.middleware";
+import { ROLES } from "../../constants/roles";
+import { getUsers, createUser, updateUser, deleteUser, toggleCanAddStudents } from "./users.controller";
 import { getRoles, createRole, updateRole, deleteRole } from "./roles.controller";
 import { getPermissions, createPermission, updatePermission, deletePermission } from "./permissions.controller";
 import { getLogs } from "./logs.controller";
 
 const router = Router();
+
+// Идоракунии корбарон/нақшҳо/иҷозатҳо/лог — танҳо superadmin ва director
+router.use(authorize(ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi
@@ -42,6 +47,18 @@ router.post("/users", logAction("User", "create"), createUser);
  */
 router.put("/users/:id", logAction("User", "update"), updateUser);
 router.delete("/users/:id", logAction("User", "delete"), deleteUser);
+
+/**
+ * @openapi
+ * /users/{id}/toggle-add-students:
+ *   put:
+ *     tags: [Administration]
+ *     summary: Фаъол/хомӯш кардани иҷозати як admin барои илова кардани донишҷӯ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.put("/users/:id/toggle-add-students", logAction("User", "toggle-add-students"), toggleCanAddStudents);
 
 /**
  * @openapi

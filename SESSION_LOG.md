@@ -34,5 +34,8 @@
 - Корбар дар Render deploy кард: https://crm-omuz-bekend.onrender.com/ — кор мекунад (`/health` OK)
 - `GET /` илова шуд (ба ҷои "Cannot GET /")
 - **Дархости нав аз корбар:** Swagger намебаромад → сабаб фаҳмонда шуд (ҳеҷ гоҳ сохта нашуда буд) → ба TZ (боби 15) ва Roadmap (Phase 13) илова карда шуд → амалӣ карда шуд: `swagger-jsdoc`+`swagger-ui-express`, `src/swagger.ts`, `/api-docs` дар `app.ts`, аннотатсияи `@openapi` ба ҳамаи 69 endpoint дар ҳамаи 13 route-файл
+- **Дархости нав:** муддати токенҳо — `access_token` → 3 соат, `refresh_token` → 1 ҳафта (Phase 14), баъдтар ба env variable-ҳо гузаронда шуд (`ACCESS_TOKEN_TTL`/`REFRESH_TOKEN_TTL`)
+- **Мушкилии амниятӣ ёфт ва ислоҳ шуд:** дар `.env.example` парол воқеӣ буд (`123456789idris`) — то ин коммит шуда буд ба GitHub. Тоза карда шуд аз файл; корбар гуфт, ки паролии воқеии Postgres-и локалиро худаш иваз мекунад (таърихи git тоза карда нашуд — корбар ин роҳро интихоб кард)
+- **Дархости калон — Phase 15 (RBAC + Coin):** 4 нақш (student/admin/superadmin/director) бо иерархияи идоракунии корбарон, coin система (худкор — 10 барои ҳафтаи пурраи ҳозирӣ+балл>90, дастӣ — admin/superadmin/director, харҷ), self-service барои student (`/students/me/*`), toggle `can_add_students` барои admin, бутстрап-и аввалин director тавассути `prisma/seed.ts` — ҳама татбиқ шуд ва тест шуд (route-reachability, зеро DB воқеӣ дар ин муҳит нест)
 
 _(идома дар поён ҳангоми stop илова мешавад)_

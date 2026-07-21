@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
+import { authorize } from "../../middlewares/rbac.middleware";
+import { ROLES } from "../../constants/roles";
 import { getBudgets, createBudget, updateBudget, deleteBudget, getBudgetChart } from "./budget.controller";
 import { getSalaries, createSalary, updateSalary, deleteSalary } from "./salary.controller";
 import { getAvans, createAvans, updateAvans, deleteAvans } from "./avans.controller";
@@ -7,6 +9,8 @@ import { getDebtors, createDebtor, updateDebtor, deleteDebtor, exportDebtors } f
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "./expenses.controller";
 
 const router = Router();
+// Финанс/ойлик — фақат superadmin ва director (admin дастрасӣ надорад)
+router.use(authorize(ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi

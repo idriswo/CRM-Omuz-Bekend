@@ -1,6 +1,33 @@
 import { Request, Response } from "express";
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { AuthRequest } from "../../middlewares/auth.middleware";
+
+function generatePassword() {
+  return crypto.randomBytes(4).toString("hex"); // 8 аломат, масалан "a1b2c3d4"
+}
+
+// Сохтани login (User бо role=student) барои донишҷӯи нав, то ба система ворид шавад
+async function createStudentLogin(studentId: number, phone: string) {
+  const studentRole = await prisma.role.findFirst({ where: { name: "student" } });
+  const existingUser = await prisma.user.findUnique({ where: { phone } });
+  if (existingUser || !phone) return null;
+
+  const plainPassword = generatePassword();
+  const hashed = await bcrypt.hash(plainPassword, 10);
+  await prisma.user.create({
+    data: {
+      phone,
+      password: hashed,
+      full_name: phone,
+      role_id: studentRole?.id,
+      student_id: studentId,
+    },
+  });
+  return { phone, password: plainPassword };
+}
 
 export const getStudents = async (req: Request, res: Response) => {
   const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
@@ -64,7 +91,10 @@ export const createStudent = async (req: Request, res: Response) => {
       branch_id: branch_id ? Number(branch_id) : undefined,
     },
   });
-  res.status(201).json(student);
+
+  // Login-и донишҷӯ худкор сохта мешавад, то дастрасии self-service дошта бошад
+  const credentials = await createStudentLogin(student.id, phone);
+  res.status(201).json({ student, login_credentials: credentials });
 };
 
 export const updateStudent = async (req: Request, res: Response) => {
@@ -149,4 +179,99 @@ export const enrollStudent = async (req: Request, res: Response) => {
     data: { students: { connect: { id: studentId } } },
   });
   res.json({ success: true, student_id: studentId });
+};
+
+// ===== Self-service (role=student) — фақат маълумоти худашро мебинад =====
+
+export const getMyProfile = async (req: AuthRequest, res: Response) => {
+  const student = await prisma.student.findUnique({
+    where: { id: req.user!.student_id },
+    include: { groups: true, graduate_info: true },
+  });
+  if (!student) return res.status(404).json({ message: "Профил ёфт нашуд" });
+  res.json(student);
+};
+
+export const getMyGroups = async (req: AuthRequest, res: Response) => {
+  const student = await prisma.student.findUnique({
+    where: { id: req.user!.student_id },
+    include: { groups: { include: { course: true } } },
+  });
+  res.json(student?.groups ?? []);
+};
+
+export const getMyGroupmates = async (req: AuthRequest, res: Response) => {
+  const student = await prisma.student.findUnique({
+    where: { id: req.user!.student_id },
+    include: { groups: { include: { students: true } } },
+  });
+  const groupmates = (student?.groups ?? []).map((g) => ({
+    group_id: g.id,
+    group_name: g.name,
+    students: g.students.filter((s) => s.id !== req.user!.student_id),
+  }));
+  res.json(groupmates);
+};
+
+export const getMyScores = async (req: AuthRequest, res: Response) => {
+  const entries = await prisma.journalEntry.findMany({
+    where: { student_id: req.user!.student_id },
+    include: { week: { include: { group: true } } },
+    orderBy: { day_date: "desc" },
+  });
+  res.json(entries);
+};
+
+export const getMyCoins = async (req: AuthRequest, res: Response) => {
+  const student = await prisma.student.findUnique({
+    where: { id: req.user!.student_id },
+    include: { coin_transactions: { orderBy: { created_at: "desc" } } },
+  });
+  if (!student) return res.status(404).json({ message: "Профил ёфт нашуд" });
+  res.json({ balance: student.coin_balance, transactions: student.coin_transactions });
+};
+
+// ===== Coin: дидан/иловаи дастӣ/харҷ (admin/superadmin/director, ё худи донишҷӯ барои дидан) =====
+
+export const getStudentCoins = async (req: Request, res: Response) => {
+  const student = await prisma.student.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { coin_transactions: { orderBy: { created_at: "desc" } } },
+  });
+  if (!student) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
+  res.json({ balance: student.coin_balance, transactions: student.coin_transactions });
+};
+
+export const addCoins = async (req: AuthRequest, res: Response) => {
+  const studentId = Number(req.params.id);
+  const { amount, reason } = req.body;
+  const amt = Number(amount);
+  if (!amt || amt <= 0) return res.status(400).json({ message: "amount бояд мусбат бошад" });
+
+  const [, student] = await prisma.$transaction([
+    prisma.coinTransaction.create({
+      data: { student_id: studentId, amount: amt, type: "manual", reason, created_by: req.user!.id },
+    }),
+    prisma.student.update({ where: { id: studentId }, data: { coin_balance: { increment: amt } } }),
+  ]);
+  res.status(201).json({ balance: student.coin_balance });
+};
+
+export const spendCoins = async (req: AuthRequest, res: Response) => {
+  const studentId = Number(req.params.id);
+  const { amount, reason } = req.body;
+  const amt = Number(amount);
+  if (!amt || amt <= 0) return res.status(400).json({ message: "amount бояд мусбат бошад" });
+
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
+  if (student.coin_balance < amt) return res.status(400).json({ message: "Coin кофӣ нест" });
+
+  const [, updated] = await prisma.$transaction([
+    prisma.coinTransaction.create({
+      data: { student_id: studentId, amount: -amt, type: "spend", reason, created_by: req.user!.id },
+    }),
+    prisma.student.update({ where: { id: studentId }, data: { coin_balance: { decrement: amt } } }),
+  ]);
+  res.json({ balance: updated.coin_balance });
 };

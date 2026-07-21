@@ -127,6 +127,38 @@ export const addJournalWeek = async (req: Request, res: Response) => {
   res.status(201).json(week);
 };
 
+const WEEKLY_COIN_AMOUNT = 10;
+const WEEKLY_COIN_MIN_AVG_SCORE = 90;
+
+// Агар донишҷӯ дар ин ҳафта ба ҳамаи рӯзҳо ҳозир шуда бошад (attendance=true барои ҳама санаҳо)
+// ва миёнаи баллаш аз 90 бештар бошад — 10 coin худкор дода мешавад (як бор барои ҳар ҳафта).
+async function maybeAwardWeeklyCoins(weekId: number, studentId: number) {
+  const week = await prisma.journalWeek.findUnique({
+    where: { id: weekId },
+    include: { entries: { where: { student_id: studentId } } },
+  });
+  if (!week || week.dates.length === 0) return;
+  if (week.entries.length < week.dates.length) return; // ҳанӯз пур нашудааст
+  if (!week.entries.every((e) => e.attendance)) return; // ҳама рӯз ҳозир набудааст
+
+  const scores = week.entries.map((e) => e.score ?? 0);
+  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  if (avgScore <= WEEKLY_COIN_MIN_AVG_SCORE) return;
+
+  const reason = `Ҳафтаи ${week.week_number} — давомоти пурра + миёнаи бали ${avgScore.toFixed(1)}`;
+  const already = await prisma.coinTransaction.findFirst({
+    where: { student_id: studentId, type: "auto_weekly", reason },
+  });
+  if (already) return; // қаблан дода шудааст
+
+  await prisma.$transaction([
+    prisma.coinTransaction.create({
+      data: { student_id: studentId, amount: WEEKLY_COIN_AMOUNT, type: "auto_weekly", reason },
+    }),
+    prisma.student.update({ where: { id: studentId }, data: { coin_balance: { increment: WEEKLY_COIN_AMOUNT } } }),
+  ]);
+}
+
 export const upsertJournalEntry = async (req: Request, res: Response) => {
   const weekId = Number(req.params.weekId);
   const studentId = Number(req.params.studentId);
@@ -140,5 +172,8 @@ export const upsertJournalEntry = async (req: Request, res: Response) => {
     update: { attendance, score, bonus, exam },
     create: { week_id: weekId, student_id: studentId, day_date: dayDate, attendance, score, bonus, exam },
   });
+
+  await maybeAwardWeeklyCoins(weekId, studentId);
+
   res.json(entry);
 };

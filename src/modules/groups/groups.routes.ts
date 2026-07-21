@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
+import { authorize } from "../../middlewares/rbac.middleware";
+import { ROLES } from "../../constants/roles";
 import {
   getGroups,
   getGroupById,
@@ -13,6 +15,7 @@ import {
 } from "./groups.controller";
 
 const router = Router();
+router.use(authorize(ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi

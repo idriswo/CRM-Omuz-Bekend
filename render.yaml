@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npx prisma db push && npm start
+    startCommand: npx prisma db push && npx prisma db seed && npm start
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -18,6 +18,10 @@ services:
         value: 3h
       - key: REFRESH_TOKEN_TTL
         value: 7d
+      - key: SEED_DIRECTOR_PHONE
+        value: 900000000
+      - key: SEED_DIRECTOR_PASSWORD
+        generateValue: true
       - key: PORT
         value: 4000
 

@@ -114,6 +114,16 @@
 
 ---
 
+## Phase 13 — Swagger (API Documentation)
+_Дархости иловагии корбар (2026-07-21): "chida swagerra namebarorad" → сабаб: Swagger ҳеҷ гоҳ сохта нашуда буд. Ба TZ (боби 15) ва ин ҷо илова карда шуд._
+
+- [x] Насби `swagger-jsdoc` + `swagger-ui-express` (+ типҳо)
+- [x] `src/swagger.ts` — конфигуратсияи OpenAPI 3.0, скан аз `src/modules/**/*.routes.ts`
+- [x] Пайваст дар `src/app.ts`: `/api-docs` (берун аз authMiddleware, то UI бе токен кушода шавад)
+- [x] Аннотатсияи `@openapi` ба **ҳамаи 69 endpoint** дар ҳамаи route-файлҳо (Auth, Branches, Courses, Leads, Students, Employees, Groups+Journal, Timetable, Payments, Accounting, Administration, SMS, Dashboard)
+- [x] `bearerAuth` security scheme + тугмаи Authorize дар UI
+- [x] `GET /` — паёми хуш (ба ҷои "Cannot GET /" дар root)
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

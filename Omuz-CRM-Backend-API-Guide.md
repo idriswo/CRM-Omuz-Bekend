@@ -534,8 +534,27 @@ export const sendSms = async (req, res) => {
 ```bash
 npm install express cors dotenv jsonwebtoken bcrypt multer exceljs date-fns
 npm install prisma @prisma/client
-npm install -D typescript ts-node-dev @types/express @types/node @types/cors @types/jsonwebtoken @types/bcrypt @types/multer
+npm install swagger-jsdoc swagger-ui-express
+npm install -D typescript ts-node-dev @types/express @types/node @types/cors @types/jsonwebtoken @types/bcrypt @types/multer @types/swagger-jsdoc @types/swagger-ui-express
 ```
+
+---
+
+## 15. Swagger (API Documentation)
+
+**Барои чӣ:** Лоиҳа дар GitHub бо якчанд нафар якҷоя сохта мешавад ва дар Render deploy мешавад. Swagger UI имкон медиҳад, ки ҳар кас (аъзои даста ё frontend-developer) тамоми endpoint-ҳо, параметрҳо ва форматҳои ҷавобро бе хондани код бубинад ва мустақим аз браузер санҷад.
+
+**Чӣ хел кор мекунад:**
+- `src/swagger.ts` — конфигуратсияи `swagger-jsdoc` (OpenAPI 3.0), ки файлҳои `src/modules/**/*.routes.ts`-ро скан мекунад ва аз рӯи аннотатсияҳои `@openapi` дар JSDoc comment-ҳо спецификатсияро худкор месозад.
+- Дар ҳар файли `*.routes.ts`, пеш аз ҳар route як JSDoc блоки `/** @openapi ... */` навишта мешавад (path, method, tags, summary, security, parameters, responses).
+- Дар `src/app.ts`: `app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))` — ин **берун аз** `/api` ва **пеш аз** `authMiddleware` монда мешавад, то ҳуҷҷат бе токен кушода шавад (аммо худи дархостҳои "Try it out" дар UI ба токен ниёз доранд, зеро роутҳо худашон бо `authMiddleware` ҳифз шудаанд).
+- Ҳамаи роутҳои ҳифзшуда (ба ғайр аз `/auth/*`) дар аннотатсия `security: [{ bearerAuth: [] }]` доранд — дар UI тугмаи **Authorize** пайдо мешавад, ки дар он `Bearer <access_token>`-ро дохил мекунед.
+
+**Дастрасӣ:**
+- Локалӣ: `http://localhost:4000/api-docs`
+- Дар Render: `https://<domain-и-шумо>.onrender.com/api-docs`
+
+**Қоида барои эндпойнти нав:** ҳар вақте ки route нав илова мешавад, ҳатман як блоки `@openapi` барояш навишта шавад (мисли намунаҳои дар ҳар `*.routes.ts` мавҷуда) — вагарна дар Swagger UI намоён намешавад.
 
 ---
 

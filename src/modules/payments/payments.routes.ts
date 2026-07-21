@@ -4,9 +4,50 @@ import { getPayments, createPayment, updatePayment, deletePayment, exportPayment
 
 const router = Router();
 
+/**
+ * @openapi
+ * /payments/export:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Экспорти пардохтҳо ба xlsx
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: Файли xlsx } }
+ */
 router.get("/export", exportPayments);
+
+/**
+ * @openapi
+ * /payments:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Рӯйхати пардохтҳо (student_id/group_id/branch_id/status)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ *   post:
+ *     tags: [Payments]
+ *     summary: Сабти пардохти нав
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 201: { description: Сохта шуд } }
+ */
 router.get("/", getPayments);
 router.post("/", logAction("Payment", "create"), createPayment);
+
+/**
+ * @openapi
+ * /payments/{id}:
+ *   put:
+ *     tags: [Payments]
+ *     summary: Навсозии пардохт
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ *   delete:
+ *     tags: [Payments]
+ *     summary: Нест кардани пардохт
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
 router.put("/:id", logAction("Payment", "update"), updatePayment);
 router.delete("/:id", logAction("Payment", "delete"), deletePayment);
 

@@ -108,9 +108,9 @@
 - ⚠️ **Эзоҳи муҳим:** TZ дар ин боб аз ҷадвали алоҳидаи `Attendance` (бо `status: present|absent|late`) ёдовар мешавад, вале мо дар Phase 6 attendance-ро ҳамчун майдони `Boolean` дар `JournalEntry` сохтем (мутобиқи боби 4-и TZ). Бинобар ин "late" дар ягон endpoint дастрас нест (0 бармегардад) — агар лозим шавад, майдони алоҳидаи `late` ба `JournalEntry` илова кардан мумкин аст.
 
 ## Phase 12 — Deploy (Render)
-- [ ] `render.yaml` / танзимоти Render
-- [ ] Environment variables дар Render
-- [ ] Prisma migrate deploy дар build command
+- [x] `render.yaml` (Blueprint: web service + Postgres database)
+- [x] Environment variables (`DATABASE_URL` аз Render Postgres, `JWT_SECRET`/`JWT_REFRESH_SECRET` худкор generate мешаванд)
+- [x] `startCommand: npx prisma db push && npm start` — ⚠️ **эзоҳ:** азбаски мо ҳанӯз ягон real Postgres надоштем, миграцияи расмии Prisma (`prisma/migrations/`) сохта нашудааст. Барои ҳозира аз `prisma db push` истифода бурдем (схемаро мустақим ба база менависад). Вақте ки лоиҳа устувор шуд, тавсия дода мешавад бо `prisma migrate dev` дар муҳити воқеӣ migration-ҳои расмӣ сохта, ба `prisma migrate deploy` гузаред.
 
 ---
 

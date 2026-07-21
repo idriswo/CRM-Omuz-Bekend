@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: omuz-crm-backend
+    env: node
+    plan: free
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: omuz-crm-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: PORT
+        value: 4000
+
+databases:
+  - name: omuz-crm-db
+    plan: free
+    databaseName: omuz_crm
+    user: omuz_crm

@@ -3,7 +3,7 @@ services:
     name: omuz-crm-backend
     env: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build
     startCommand: npx prisma db push && npx prisma db seed && npm start
     envVars:
       - key: DATABASE_URL

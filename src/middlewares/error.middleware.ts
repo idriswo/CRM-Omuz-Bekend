@@ -29,8 +29,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       .json({ message: "Ин сабтро наметавон нест/навсозӣ кард, зеро дар ҷои дигар истифода мешавад" });
   }
 
-  res.status(500).json({
-    message: "Хатогии сервер",
-    ...(process.env.NODE_ENV !== "production" ? { detail: rawMessage } : {}),
-  });
+  // Тафсилот танҳо дар лог (console.error дар боло) мемонад, на дар ҷавоби HTTP —
+  // то маълумоти дохилии база/сервер ба клиент намоён нашавад.
+  res.status(500).json({ message: "Хатогии сервер" });
 }

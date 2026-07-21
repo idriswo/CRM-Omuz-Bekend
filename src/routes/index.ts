@@ -11,6 +11,7 @@ import accountingRoutes from "../modules/accounting/accounting.routes";
 import administrationRoutes from "../modules/administration/administration.routes";
 import smsRoutes from "../modules/sms/sms.routes";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes";
+import notificationsRoutes from "../modules/notifications/notifications.routes";
 
 const router = Router();
 
@@ -26,7 +27,6 @@ router.use("/accounting", accountingRoutes);
 router.use("/", administrationRoutes); // /users, /roles, /permissions, /logs
 router.use("/sms", smsRoutes);
 router.use("/dashboard", dashboardRoutes);
-
-// Дигар модулҳо (students, groups, employees, ...) дар фазаҳои навбатӣ инҷо илова мешаванд.
+router.use("/notifications", notificationsRoutes);
 
 export default router;

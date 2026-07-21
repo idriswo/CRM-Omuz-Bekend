@@ -12,6 +12,10 @@ import {
   getGroupJournal,
   addJournalWeek,
   upsertJournalEntry,
+  getGroupSchedule,
+  createGroupScheduleEntry,
+  updateGroupScheduleEntry,
+  deleteGroupScheduleEntry,
 } from "./groups.controller";
 
 const router = Router();
@@ -66,6 +70,48 @@ router.post("/:id/journal/week", logAction("JournalWeek", "create"), addJournalW
  *     responses: { 200: { description: OK } }
  */
 router.put("/:id/journal/:weekId/students/:studentId", logAction("JournalEntry", "upsert"), upsertJournalEntry);
+
+/**
+ * @openapi
+ * /groups/{id}/schedule:
+ *   get:
+ *     tags: [Groups]
+ *     summary: Ҷадвали дарсҳои ин гурӯҳ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ *   post:
+ *     tags: [Groups]
+ *     summary: Илова кардани дарс ба ҷадвали ин гурӯҳ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 201: { description: Сохта шуд } }
+ */
+router.get("/:id/schedule", getGroupSchedule);
+router.post("/:id/schedule", logAction("TimetableEntry", "create"), createGroupScheduleEntry);
+
+/**
+ * @openapi
+ * /groups/{id}/schedule/{entryId}:
+ *   put:
+ *     tags: [Groups]
+ *     summary: Навсозии дарси ин гурӯҳ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *       - { in: path, name: entryId, required: true, schema: { type: integer } }
+ *     responses: { 200: { description: OK } }
+ *   delete:
+ *     tags: [Groups]
+ *     summary: Нест кардани дарси ин гурӯҳ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *       - { in: path, name: entryId, required: true, schema: { type: integer } }
+ *     responses: { 200: { description: OK } }
+ */
+router.put("/:id/schedule/:entryId", logAction("TimetableEntry", "update"), updateGroupScheduleEntry);
+router.delete("/:id/schedule/:entryId", logAction("TimetableEntry", "delete"), deleteGroupScheduleEntry);
 
 /**
  * @openapi

@@ -193,6 +193,25 @@ _Дархости корбар: "kani bin kadom zapros kor mekunad kadomash kor 
 - [x] `error.middleware.ts` акнун ҳамеша тафсилотро аз клиент пинҳон мекунад (на вобаста ба NODE_ENV) — соддатар ва бехатартар
 - ⚠️ **Дарс:** ҳар боре ки Render env vars-ро тавассути API PUT мекунам, бояд **ҳамаи** калидҳои мавҷударо дар як payload гузорам (PUT ҳамаро иваз мекунад, на илова) — як бор аз рӯи иштибоҳ `JWT_SECRET`/`JWT_REFRESH_SECRET`-ро пок кардам ва бояд аз нав generate мекардам
 
+## Phase 18 — Endpoint-ҳои норасида (дархости frontend)
+_Frontend, пас аз пайваст шудан бо RBAC-и 4-нақша, рӯйхати endpoint-ҳои норасидаро фиристод. Ҳама сохта шуданд:_
+
+- [x] **Accounting Overview:** `GET /accounting/overview`, `/overview/chart?year=`, `/overview/students-payment` (хулосаи молиявии умумӣ, диаграмма, пардохти ҳар донишҷӯ)
+- [x] **Accountant (аз рӯи ментор):** `GET /accounting/accountant`, `/accountant/chart?year=`
+- [x] **Net (фоида):** `GET /accounting/net?year=|month=`
+- [x] **Payments — Prepayment:** `GET /payments/prepayment`
+- [x] **Forgot password — тасдиқ + иваз:** `POST /auth/verify-reset-code`, `POST /auth/reset-password` (коди SMS акнун дар `User.reset_code`/`reset_code_expires` нигоҳ дошта мешавад, на танҳо бармегардад)
+- [x] **Groups — Schedule tab:** `GET/POST /groups/:id/schedule`, `PUT/DELETE /groups/:id/schedule/:entryId` (nested TimetableEntry)
+- [x] **Notifications:** модели нав `Notification` + `GET /notifications`, `PUT /notifications/:id/read`, `PUT /notifications/read-all`
+- [x] **SMS recipients:** `GET /sms/recipients/group|students|mentors|leads|graduates`
+- [x] **Students → Graduates:** `GET /students/graduates/groups`, `GET /students/graduates/:id`
+- [x] **Students → Leaders:** `GET /students/leaders` (рейтинг аз рӯи coin), `GET /students/leaders/winners` (топ 3)
+- [x] **Students → Left courses (саҳифаи пурра):** `GET /students/left-courses`, `/left-courses/chart?year=`, `/left-courses/groups` — майдони нави `Student.left_at` илова шуд (пур мешавад вақте status→inactive иваз мешавад, дар `updateStudent`)
+- [x] **Students → Student activity:** `GET /students/activity` (аз модели Log, entity: Student/JournalEntry/Coin)
+- [x] **Students → Enroll:** `GET /students/enroll/chart?year=` (POST /students/enroll аллакай вуҷуд дошт)
+- [x] **Profile-и умумии staff:** `GET /auth/me` — кор мекунад барои ҳама 4 нақш (на танҳо student)
+- ⚠️ Ба frontend гуфта шуд: "ноустувории" Render (гоҳ 200 гоҳ 502) аз рӯи логи Render (бе ягон `server_failed` пас аз Phase 17) эҳтимолан **cold start**-и free tier аст (баъд аз 15 дақиқа бекорӣ, аввалин дархост то 60 сония вақт мегирад), на bug
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

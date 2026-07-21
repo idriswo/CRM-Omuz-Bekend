@@ -9,10 +9,67 @@ import {
   deleteSmsTemplate,
   sendSms,
   getSmsHistory,
+  getRecipientsByGroup,
+  getRecipientsStudents,
+  getRecipientsMentors,
+  getRecipientsLeads,
+  getRecipientsGraduates,
 } from "./sms.controller";
 
 const router = Router();
 router.use(authorize(ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR));
+
+/**
+ * @openapi
+ * /sms/recipients/group:
+ *   get:
+ *     tags: [SMS]
+ *     summary: Рӯйхати донишҷӯёни як гурӯҳ (барои интихоби ретсипиент)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: query, name: group_id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/recipients/group", getRecipientsByGroup);
+/**
+ * @openapi
+ * /sms/recipients/students:
+ *   get:
+ *     tags: [SMS]
+ *     summary: Рӯйхати ҳамаи донишҷӯён (id, ном, телефон)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/recipients/students", getRecipientsStudents);
+/**
+ * @openapi
+ * /sms/recipients/mentors:
+ *   get:
+ *     tags: [SMS]
+ *     summary: Рӯйхати ҳамаи кормандон/менторҳо
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/recipients/mentors", getRecipientsMentors);
+/**
+ * @openapi
+ * /sms/recipients/leads:
+ *   get:
+ *     tags: [SMS]
+ *     summary: Рӯйхати ҳамаи лидҳо
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/recipients/leads", getRecipientsLeads);
+/**
+ * @openapi
+ * /sms/recipients/graduates:
+ *   get:
+ *     tags: [SMS]
+ *     summary: Рӯйхати ҳамаи хатмкунандагон
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/recipients/graduates", getRecipientsGraduates);
 
 /**
  * @openapi

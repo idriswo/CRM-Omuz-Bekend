@@ -31,6 +31,24 @@ export const getPayments = async (req: Request, res: Response) => {
   res.json(buildEnvelope(data, total, page, limit));
 };
 
+export const getPrepayments = async (req: Request, res: Response) => {
+  const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
+  const where = { ...paymentsWhere(req.query), status: "prepayment" };
+
+  const [data, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort_by as string]: sort_dir },
+      include: { student: true },
+    }),
+    prisma.payment.count({ where }),
+  ]);
+
+  res.json(buildEnvelope(data, total, page, limit));
+};
+
 export const createPayment = async (req: Request, res: Response) => {
   const { student_id, amount, discount, paid, date, group_id, branch_id, status } = req.body;
   const payment = await prisma.payment.create({

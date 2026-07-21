@@ -43,6 +43,7 @@ model Student {
   father_phone  String?
   photo         String?
   status        String        @default("active") // active|inactive|finished
+  left_at       DateTime? // вақте status ба inactive иваз мешавад, ин пур мешавад (барои left-courses chart)
   branch_id     Int?
   branch        Branch?       @relation(fields: [branch_id], references: [id])
   groups        Group[]       @relation("StudentGroups")
@@ -286,8 +287,21 @@ model User {
   // Танҳо барои role=admin маъно дорад: superadmin/director метавонанд ин имконро хомӯш/фаъол кунанд
   can_add_students  Boolean  @default(true)
   refresh_token     String?
+  reset_code        String?
+  reset_code_expires DateTime?
   logs              Log[]
+  notifications     Notification[]
   created_at        DateTime @default(now())
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  user       User     @relation(fields: [user_id], references: [id])
+  title      String
+  message    String
+  read       Boolean  @default(false)
+  created_at DateTime @default(now())
 }
 
 model Role {

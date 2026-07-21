@@ -12,7 +12,10 @@ import {
   getGraduates,
   updateGraduate,
   getGraduatesStats,
+  getGraduateGroups,
+  getGraduateById,
   enrollStudent,
+  getEnrollChart,
   getMyProfile,
   getMyGroups,
   getMyGroupmates,
@@ -21,6 +24,12 @@ import {
   getStudentCoins,
   addCoins,
   spendCoins,
+  getLeaders,
+  getLeadersWinners,
+  getLeftCoursesList,
+  getLeftCoursesChart,
+  getLeftCoursesGroups,
+  getStudentActivity,
 } from "./students.controller";
 
 const router = Router();
@@ -36,45 +45,9 @@ const STAFF = [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR] as const;
  *     responses: { 200: { description: OK } }
  */
 router.get("/me", authorize(ROLES.STUDENT), getMyProfile);
-/**
- * @openapi
- * /students/me/groups:
- *   get:
- *     tags: [Students]
- *     summary: Гурӯҳҳои худи донишҷӯ
- *     security: [{ bearerAuth: [] }]
- *     responses: { 200: { description: OK } }
- */
 router.get("/me/groups", authorize(ROLES.STUDENT), getMyGroups);
-/**
- * @openapi
- * /students/me/groupmates:
- *   get:
- *     tags: [Students]
- *     summary: Ҳамкурсҳои донишҷӯ (аз рӯи гурӯҳҳои умумӣ)
- *     security: [{ bearerAuth: [] }]
- *     responses: { 200: { description: OK } }
- */
 router.get("/me/groupmates", authorize(ROLES.STUDENT), getMyGroupmates);
-/**
- * @openapi
- * /students/me/scores:
- *   get:
- *     tags: [Students]
- *     summary: Баллҳо/давомоти худи донишҷӯ (аз Journal)
- *     security: [{ bearerAuth: [] }]
- *     responses: { 200: { description: OK } }
- */
 router.get("/me/scores", authorize(ROLES.STUDENT), getMyScores);
-/**
- * @openapi
- * /students/me/coins:
- *   get:
- *     tags: [Students]
- *     summary: Coin-и худи донишҷӯ (баланс + таърих)
- *     security: [{ bearerAuth: [] }]
- *     responses: { 200: { description: OK } }
- */
 router.get("/me/coins", authorize(ROLES.STUDENT), getMyCoins);
 
 /**
@@ -87,9 +60,77 @@ router.get("/me/coins", authorize(ROLES.STUDENT), getMyCoins);
  *     responses: { 200: { description: OK } }
  */
 router.get("/graduates/stats", authorize(...STAFF), getGraduatesStats);
+/**
+ * @openapi
+ * /students/graduates/groups:
+ *   get:
+ *     tags: [Students]
+ *     summary: Гурӯҳбандии хатмкунандагон (шумора дар ҳар гурӯҳ)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/graduates/groups", authorize(...STAFF), getGraduateGroups);
 router.get("/graduates", authorize(...STAFF), getGraduates);
 router.put("/graduates/:id", authorize(...STAFF), logAction("Student", "update-graduate"), updateGraduate);
+/**
+ * @openapi
+ * /students/graduates/{id}:
+ *   get:
+ *     tags: [Students]
+ *     summary: Маълумоти пурраи як хатмкунанда
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/graduates/:id", authorize(...STAFF), getGraduateById);
+
+/**
+ * @openapi
+ * /students/leaders:
+ *   get:
+ *     tags: [Students]
+ *     summary: Рейтинги донишҷӯён аз рӯи coin
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/leaders/winners", authorize(...STAFF), getLeadersWinners);
+router.get("/leaders", authorize(...STAFF), getLeaders);
+
+/**
+ * @openapi
+ * /students/left-courses:
+ *   get:
+ *     tags: [Students]
+ *     summary: Донишҷӯёне, ки курсро тарк кардаанд (status=inactive)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/left-courses/chart", authorize(...STAFF), getLeftCoursesChart);
+router.get("/left-courses/groups", authorize(...STAFF), getLeftCoursesGroups);
+router.get("/left-courses", authorize(...STAFF), getLeftCoursesList);
+
+/**
+ * @openapi
+ * /students/activity:
+ *   get:
+ *     tags: [Students]
+ *     summary: Сабтҳои охирини амал вобаста ба донишҷӯён (аз Log)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/activity", authorize(...STAFF), getStudentActivity);
+
 router.post("/enroll", authorize(...STAFF), logAction("Student", "enroll"), enrollStudent);
+/**
+ * @openapi
+ * /students/enroll/chart:
+ *   get:
+ *     tags: [Students]
+ *     summary: Диаграммаи бақайдгирии донишҷӯён аз рӯи моҳ
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/enroll/chart", authorize(...STAFF), getEnrollChart);
 
 /**
  * @openapi
@@ -109,16 +150,6 @@ router.post("/enroll", authorize(...STAFF), logAction("Student", "enroll"), enro
  */
 router.get("/:id/coins", selfStudentOr(...STAFF), getStudentCoins);
 router.post("/:id/coins", authorize(...STAFF), logAction("Coin", "add"), addCoins);
-/**
- * @openapi
- * /students/{id}/coins/spend:
- *   post:
- *     tags: [Students]
- *     summary: Харҷи coin (масалан барои тахфиф/мукофот)
- *     security: [{ bearerAuth: [] }]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
- *     responses: { 200: { description: OK } }
- */
 router.post("/:id/coins/spend", authorize(...STAFF), logAction("Coin", "spend"), spendCoins);
 
 /**

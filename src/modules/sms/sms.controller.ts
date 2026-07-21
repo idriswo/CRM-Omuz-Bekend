@@ -28,6 +28,34 @@ async function getPhonesByType(recipient_type: string, recipient_ids: number[]):
   }
 }
 
+// ===== Recipients — рӯйхати ретсипиентҳо барои интихоб дар frontend (id, ном, телефон) =====
+
+export const getRecipientsByGroup = async (req: Request, res: Response) => {
+  const groupId = Number(req.query.group_id);
+  const students = await prisma.student.findMany({ where: { groups: { some: { id: groupId } } } });
+  res.json(students.map((s) => ({ id: s.id, full_name: `${s.first_name} ${s.last_name}`, phone: s.phone })));
+};
+
+export const getRecipientsStudents = async (_req: Request, res: Response) => {
+  const students = await prisma.student.findMany();
+  res.json(students.map((s) => ({ id: s.id, full_name: `${s.first_name} ${s.last_name}`, phone: s.phone })));
+};
+
+export const getRecipientsMentors = async (_req: Request, res: Response) => {
+  const employees = await prisma.employee.findMany();
+  res.json(employees.map((e) => ({ id: e.id, full_name: `${e.first_name} ${e.last_name}`, phone: e.phone })));
+};
+
+export const getRecipientsLeads = async (_req: Request, res: Response) => {
+  const leads = await prisma.lead.findMany();
+  res.json(leads.map((l) => ({ id: l.id, full_name: l.full_name, phone: l.phone })));
+};
+
+export const getRecipientsGraduates = async (_req: Request, res: Response) => {
+  const graduates = await prisma.student.findMany({ where: { status: "finished" } });
+  res.json(graduates.map((s) => ({ id: s.id, full_name: `${s.first_name} ${s.last_name}`, phone: s.phone })));
+};
+
 export const getSmsTemplates = async (_req: Request, res: Response) => {
   const templates = await prisma.smsTemplate.findMany({ orderBy: { id: "desc" } });
   res.json(templates);

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
 import { ROLES } from "../../constants/roles";
-import { getPayments, createPayment, updatePayment, deletePayment, exportPayments } from "./payments.controller";
+import { getPayments, createPayment, updatePayment, deletePayment, exportPayments, getPrepayments } from "./payments.controller";
 
 const router = Router();
 // Финанс — фақат director (тибқи дархости корбар: admin ва superadmin ба он дастрасӣ надоранд)
@@ -18,6 +18,16 @@ router.use(authorize(ROLES.DIRECTOR));
  *     responses: { 200: { description: Файли xlsx } }
  */
 router.get("/export", exportPayments);
+/**
+ * @openapi
+ * /payments/prepayment:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Пардохтҳои навъи prepayment
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/prepayment", getPrepayments);
 
 /**
  * @openapi

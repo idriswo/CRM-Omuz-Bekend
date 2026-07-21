@@ -1,6 +1,16 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { register, login, refreshToken, forgotPassword, logout, changePassword } from "./auth.controller";
+import {
+  register,
+  login,
+  refreshToken,
+  forgotPassword,
+  logout,
+  changePassword,
+  verifyResetCode,
+  resetPassword,
+  getMe,
+} from "./auth.controller";
 
 const router = Router();
 
@@ -51,6 +61,30 @@ router.post("/forgot-password", forgotPassword);
 
 /**
  * @openapi
+ * /auth/verify-reset-code:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Тафтиши коди барқарорсозӣ (пеш аз reset-password)
+ *     responses:
+ *       200: { description: Код дуруст аст }
+ *       400: { description: Код хато ё мӯҳлаташ гузаштааст }
+ */
+router.post("/verify-reset-code", verifyResetCode);
+
+/**
+ * @openapi
+ * /auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Таъини паролии нав тавассути коди тасдиқшуда (бе токен)
+ *     responses:
+ *       200: { description: Парол иваз шуд }
+ *       400: { description: Код хато ё мӯҳлаташ гузаштааст }
+ */
+router.post("/reset-password", resetPassword);
+
+/**
+ * @openapi
  * /auth/logout:
  *   post:
  *     tags: [Auth]
@@ -72,5 +106,17 @@ router.post("/logout", logout);
  *       401: { description: Паролии кӯҳна хато аст }
  */
 router.post("/change-password", authMiddleware, changePassword);
+
+/**
+ * @openapi
+ * /auth/me:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Профили худи корбари ворид шуда (новобаста аз нақш — student/admin/superadmin/director)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: OK }
+ */
+router.get("/me", authMiddleware, getMe);
 
 export default router;

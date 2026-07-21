@@ -7,10 +7,81 @@ import { getSalaries, createSalary, updateSalary, deleteSalary } from "./salary.
 import { getAvans, createAvans, updateAvans, deleteAvans } from "./avans.controller";
 import { getDebtors, createDebtor, updateDebtor, deleteDebtor, exportDebtors } from "./debtors.controller";
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "./expenses.controller";
+import { getOverview, getOverviewChart, getStudentsPaymentOverview } from "./overview.controller";
+import { getAccountantSummary, getAccountantChart } from "./accountant.controller";
+import { getNet } from "./net.controller";
 
 const router = Router();
 // Финанс/ойлик — фақат director (admin ва superadmin дастрасӣ надоранд)
 router.use(authorize(ROLES.DIRECTOR));
+
+/**
+ * @openapi
+ * /accounting/overview:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Хулосаи умумии молиявӣ (даромад/хароҷот/маош/аванс/буҷа/net)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/overview", getOverview);
+/**
+ * @openapi
+ * /accounting/overview/chart:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Диаграммаи молиявӣ аз рӯи моҳ (income/expenses/salaries/avans)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: query, name: year, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/overview/chart", getOverviewChart);
+/**
+ * @openapi
+ * /accounting/overview/students-payment:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Хулосаи пардохти ҳар донишҷӯ (total/paid/remaining)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/overview/students-payment", getStudentsPaymentOverview);
+
+/**
+ * @openapi
+ * /accounting/accountant:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Хулосаи маош/аванс аз рӯи ҳар корманд (ментор)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/accountant", getAccountantSummary);
+/**
+ * @openapi
+ * /accounting/accountant/chart:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Диаграммаи маош/аванс аз рӯи моҳ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: query, name: year, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/accountant/chart", getAccountantChart);
+
+/**
+ * @openapi
+ * /accounting/net:
+ *   get:
+ *     tags: [Accounting]
+ *     summary: Фоидаи соф (даромад - хароҷот - маош - аванс)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: query, name: year, schema: { type: integer } }
+ *       - { in: query, name: month, schema: { type: string, format: date } }
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/net", getNet);
 
 /**
  * @openapi

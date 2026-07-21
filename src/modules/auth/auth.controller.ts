@@ -3,6 +3,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../utils/prisma";
 import { AuthRequest } from "../../middlewares/auth.middleware";
+import { smsProvider } from "../../utils/smsProvider";
+
+const RESET_CODE_TTL_MS = 15 * 60 * 1000; // 15 дақиқа
 
 const ACCESS_TOKEN_TTL = (process.env.ACCESS_TOKEN_TTL || "3h") as jwt.SignOptions["expiresIn"];
 const REFRESH_TOKEN_TTL = (process.env.REFRESH_TOKEN_TTL || "7d") as jwt.SignOptions["expiresIn"];
@@ -76,9 +79,46 @@ export const forgotPassword = async (req: Request, res: Response) => {
   const user = await prisma.user.findUnique({ where: { phone } });
   if (!user) return res.status(404).json({ message: "Корбар ёфт нашуд" });
 
-  // TODO: пас аз сохтани модули SMS (Phase 10), кодро тавассути smsProvider фиристед
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  res.json({ message: "Код фиристода шуд", code });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { reset_code: code, reset_code_expires: new Date(Date.now() + RESET_CODE_TTL_MS) },
+  });
+  await smsProvider.send(phone, `Коди барқарорсозии парол: ${code}`);
+
+  res.json({ message: "Код фиристода шуд" });
+};
+
+// POST /auth/verify-reset-code — тафтиши кодест, ки бо SMS фиристода шуд
+export const verifyResetCode = async (req: Request, res: Response) => {
+  const { phone, code } = req.body;
+  const user = await prisma.user.findUnique({ where: { phone } });
+  if (!user || !user.reset_code || user.reset_code !== code) {
+    return res.status(400).json({ message: "Коди хато" });
+  }
+  if (!user.reset_code_expires || user.reset_code_expires < new Date()) {
+    return res.status(400).json({ message: "Мӯҳлати код гузаштааст" });
+  }
+  res.json({ success: true, valid: true });
+};
+
+// POST /auth/reset-password — таъини паролии нав тавассути коди тасдиқшуда (бе токен)
+export const resetPassword = async (req: Request, res: Response) => {
+  const { phone, code, new_password } = req.body;
+  const user = await prisma.user.findUnique({ where: { phone } });
+  if (!user || !user.reset_code || user.reset_code !== code) {
+    return res.status(400).json({ message: "Коди хато" });
+  }
+  if (!user.reset_code_expires || user.reset_code_expires < new Date()) {
+    return res.status(400).json({ message: "Мӯҳлати код гузаштааст" });
+  }
+
+  const hashed = await bcrypt.hash(new_password, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed, reset_code: null, reset_code_expires: null, refresh_token: null },
+  });
+  res.json({ success: true, message: "Парол иваз шуд. Бо парoли нав ворид шавед." });
 };
 
 export const logout = async (req: Request, res: Response) => {
@@ -97,4 +137,15 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
   const hashed = await bcrypt.hash(new_password, 10);
   await prisma.user.update({ where: { id: user.id }, data: { password: hashed, refresh_token: null } });
   res.json({ success: true, message: "Парол иваз шуд. Бо парoли нав дубора ворид шавед." });
+};
+
+// GET /auth/me — профили худи корбари ворид шуда, новобаста аз нақш
+export const getMe = async (req: AuthRequest, res: Response) => {
+  const user = await prisma.user.findUnique({
+    where: { id: req.user!.id },
+    include: { role: true },
+  });
+  if (!user) return res.status(404).json({ message: "Корбар ёфт нашуд" });
+  const { password: _pw, refresh_token: _rt, reset_code: _rc, reset_code_expires: _rce, ...safeUser } = user;
+  res.json(safeUser);
 };

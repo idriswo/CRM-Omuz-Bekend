@@ -177,3 +177,57 @@ export const upsertJournalEntry = async (req: Request, res: Response) => {
 
   res.json(entry);
 };
+
+// ===== Schedule tab — TimetableEntry-и ин гурӯҳ (nested view) =====
+
+export const getGroupSchedule = async (req: Request, res: Response) => {
+  const groupId = Number(req.params.id);
+  const entries = await prisma.timetableEntry.findMany({
+    where: { group_id: groupId },
+    include: { mentor: true },
+    orderBy: { date: "asc" },
+  });
+  res.json(entries);
+};
+
+export const createGroupScheduleEntry = async (req: Request, res: Response) => {
+  const groupId = Number(req.params.id);
+  const { course_name, type, start_time, end_time, class_room, mentor_id, date, repeat_days } = req.body;
+  const entry = await prisma.timetableEntry.create({
+    data: {
+      course_name,
+      group_id: groupId,
+      type,
+      start_time: new Date(start_time),
+      end_time: new Date(end_time),
+      class_room,
+      mentor_id: Number(mentor_id),
+      date: new Date(date),
+      repeat_days: repeat_days ?? [],
+    },
+  });
+  res.status(201).json(entry);
+};
+
+export const updateGroupScheduleEntry = async (req: Request, res: Response) => {
+  const { course_name, type, start_time, end_time, class_room, mentor_id, date, repeat_days } = req.body;
+  const entry = await prisma.timetableEntry.update({
+    where: { id: Number(req.params.entryId) },
+    data: {
+      course_name,
+      type,
+      start_time: start_time ? new Date(start_time) : undefined,
+      end_time: end_time ? new Date(end_time) : undefined,
+      class_room,
+      mentor_id: mentor_id ? Number(mentor_id) : undefined,
+      date: date ? new Date(date) : undefined,
+      repeat_days,
+    },
+  });
+  res.json(entry);
+};
+
+export const deleteGroupScheduleEntry = async (req: Request, res: Response) => {
+  await prisma.timetableEntry.delete({ where: { id: Number(req.params.entryId) } });
+  res.json({ success: true });
+};

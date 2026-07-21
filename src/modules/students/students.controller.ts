@@ -102,6 +102,14 @@ export const updateStudent = async (req: Request, res: Response) => {
     req.body;
   const photo = req.file ? `/uploads/${req.file.filename}` : undefined;
 
+  let left_at: Date | null | undefined = undefined;
+  if (status === "inactive") {
+    const existing = await prisma.student.findUnique({ where: { id: Number(req.params.id) } });
+    if (existing && existing.status !== "inactive") left_at = new Date();
+  } else if (status) {
+    left_at = null;
+  }
+
   const student = await prisma.student.update({
     where: { id: Number(req.params.id) },
     data: {
@@ -115,6 +123,7 @@ export const updateStudent = async (req: Request, res: Response) => {
       father_phone,
       ...(photo ? { photo } : {}),
       status,
+      left_at,
       branch_id: branch_id ? Number(branch_id) : undefined,
     },
   });
@@ -274,4 +283,147 @@ export const spendCoins = async (req: AuthRequest, res: Response) => {
     prisma.student.update({ where: { id: studentId }, data: { coin_balance: { decrement: amt } } }),
   ]);
   res.json({ balance: updated.coin_balance });
+};
+
+// ===== Graduates: гурӯҳбандӣ ва як хатмкунандаи муайян =====
+
+export const getGraduateGroups = async (_req: Request, res: Response) => {
+  const groups = await prisma.group.findMany({
+    where: { students: { some: { status: "finished" } } },
+    include: { course: true, students: { where: { status: "finished" } } },
+  });
+  res.json(
+    groups.map((g) => ({
+      group_id: g.id,
+      group_name: g.name,
+      course_name: g.course.name,
+      graduates_count: g.students.length,
+    }))
+  );
+};
+
+export const getGraduateById = async (req: Request, res: Response) => {
+  const student = await prisma.student.findFirst({
+    where: { id: Number(req.params.id), status: "finished" },
+    include: { graduate_info: true, groups: { include: { course: true } } },
+  });
+  if (!student) return res.status(404).json({ message: "Хатмкунанда ёфт нашуд" });
+  res.json(student);
+};
+
+// ===== Leaders — рейтинги донишҷӯён аз рӯи coin =====
+
+export const getLeaders = async (req: Request, res: Response) => {
+  const { page, limit, skip } = getPagination(req.query);
+
+  const [data, total] = await Promise.all([
+    prisma.student.findMany({
+      where: { status: "active" },
+      skip,
+      take: limit,
+      orderBy: { coin_balance: "desc" },
+    }),
+    prisma.student.count({ where: { status: "active" } }),
+  ]);
+
+  res.json(buildEnvelope(data, total, page, limit));
+};
+
+export const getLeadersWinners = async (_req: Request, res: Response) => {
+  const winners = await prisma.student.findMany({
+    where: { status: "active" },
+    orderBy: { coin_balance: "desc" },
+    take: 3,
+  });
+  res.json(winners);
+};
+
+// ===== Left courses — саҳифаи пурра (рӯйхат/chart/гурӯҳ) =====
+
+export const getLeftCoursesList = async (req: Request, res: Response) => {
+  const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
+  const where = { status: "inactive" };
+
+  const [data, total] = await Promise.all([
+    prisma.student.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sort_by === "id" ? "left_at" : (sort_by as string)]: sort_dir },
+      include: { groups: { include: { course: true } } },
+    }),
+    prisma.student.count({ where }),
+  ]);
+
+  res.json(buildEnvelope(data, total, page, limit));
+};
+
+export const getLeftCoursesChart = async (req: Request, res: Response) => {
+  const year = Number(req.query.year) || new Date().getFullYear();
+  const start = new Date(`${year}-01-01T00:00:00.000Z`);
+  const end = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+
+  const students = await prisma.student.findMany({
+    where: { status: "inactive", left_at: { gte: start, lt: end } },
+    select: { left_at: true },
+  });
+
+  const result: Record<number, number> = {};
+  for (const s of students) {
+    if (!s.left_at) continue;
+    const month = s.left_at.getMonth() + 1;
+    result[month] = (result[month] || 0) + 1;
+  }
+  res.json(result);
+};
+
+export const getLeftCoursesGroups = async (_req: Request, res: Response) => {
+  const groups = await prisma.group.findMany({
+    include: { course: true, students: { where: { status: "inactive" } } },
+  });
+  res.json(
+    groups
+      .filter((g) => g.students.length > 0)
+      .map((g) => ({ group_id: g.id, group_name: g.name, course_name: g.course.name, left_count: g.students.length }))
+  );
+};
+
+// ===== Student activity — сабтҳои охирини амал (аз Log) =====
+
+export const getStudentActivity = async (req: Request, res: Response) => {
+  const { page, limit, skip } = getPagination(req.query);
+  const where = { entity: { in: ["Student", "JournalEntry", "Coin"] } };
+
+  const [data, total] = await Promise.all([
+    prisma.log.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { date: "desc" },
+      include: { user: { select: { id: true, full_name: true } } },
+    }),
+    prisma.log.count({ where }),
+  ]);
+
+  res.json(buildEnvelope(data, total, page, limit));
+};
+
+// ===== Enroll chart =====
+
+export const getEnrollChart = async (req: Request, res: Response) => {
+  const year = Number(req.query.year) || new Date().getFullYear();
+  const start = new Date(`${year}-01-01T00:00:00.000Z`);
+  const end = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+
+  const students = await prisma.student.findMany({
+    where: { created_at: { gte: start, lt: end } },
+    select: { created_at: true },
+  });
+
+  const result: Record<number, number> = {};
+  for (const s of students) {
+    const month = s.created_at.getMonth() + 1;
+    result[month] = (result[month] || 0) + 1;
+  }
+  res.json(result);
 };

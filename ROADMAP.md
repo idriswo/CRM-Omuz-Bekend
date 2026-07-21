@@ -83,10 +83,10 @@
 - [x] CRUD `/accounting/expenses`
 
 ## Phase 9 — Administration (`/users`, `/permissions`, `/roles`, `/logs`)
-- [ ] Prisma models `Role`, `Permission`, `Log`
-- [ ] CRUD `/users`, `/roles`, `/permissions`
-- [ ] `GET /logs`
-- [ ] Миёнафзори `logAction` (auto-log)
+- [x] Prisma models `Role`, `Permission`, `Log` (+ `User.role` relation)
+- [x] CRUD `/users`, `/roles`, `/permissions`
+- [x] `GET /logs`
+- [x] Миёнафзори `logAction` (auto-log) — сохта ва ба **ҳамаи** мутатсияҳои create/update/delete-и модулҳои қаблӣ (Branches, Courses, Leads, Students, Employees, Groups+Journal, Timetable, Payments, Accounting, Administration) пайваст карда шуд
 
 ## Phase 10 — SMS Mailings (`/sms`)
 - [ ] Prisma models `SmsTemplate`, `SmsHistory`

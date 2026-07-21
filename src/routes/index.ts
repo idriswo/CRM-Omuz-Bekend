@@ -8,6 +8,7 @@ import groupsRoutes from "../modules/groups/groups.routes";
 import timetableRoutes from "../modules/timetable/timetable.routes";
 import paymentsRoutes from "../modules/payments/payments.routes";
 import accountingRoutes from "../modules/accounting/accounting.routes";
+import administrationRoutes from "../modules/administration/administration.routes";
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use("/groups", groupsRoutes);
 router.use("/timetable", timetableRoutes);
 router.use("/payments", paymentsRoutes);
 router.use("/accounting", accountingRoutes);
+router.use("/", administrationRoutes); // /users, /roles, /permissions, /logs
 
 // Дигар модулҳо (students, groups, employees, ...) дар фазаҳои навбатӣ инҷо илова мешаванд.
 

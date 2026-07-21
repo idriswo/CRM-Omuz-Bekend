@@ -251,7 +251,34 @@ model User {
   password      String
   full_name     String
   role_id       Int?
+  role          Role?    @relation(fields: [role_id], references: [id])
   branch_id     Int?
   refresh_token String?
+  logs          Log[]
   created_at    DateTime @default(now())
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String
+  permissions Permission[]
+  users       User[]
+}
+
+model Permission {
+  id      Int     @id @default(autoincrement())
+  name    String
+  group   String // барои филтри "filter"
+  role_id Int?
+  role    Role?   @relation(fields: [role_id], references: [id])
+  enabled Boolean @default(true)
+}
+
+model Log {
+  id      Int      @id @default(autoincrement())
+  user_id Int
+  user    User     @relation(fields: [user_id], references: [id])
+  action  String
+  entity  String
+  date    DateTime @default(now())
 }

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { logAction } from "../../middlewares/log.middleware";
 import {
   getCourses,
   getCourseById,
@@ -11,8 +12,8 @@ const router = Router();
 
 router.get("/", getCourses);
 router.get("/:id", getCourseById);
-router.post("/", createCourse);
-router.put("/:id", updateCourse);
-router.delete("/:id", deleteCourse);
+router.post("/", logAction("Course", "create"), createCourse);
+router.put("/:id", logAction("Course", "update"), updateCourse);
+router.delete("/:id", logAction("Course", "delete"), deleteCourse);
 
 export default router;

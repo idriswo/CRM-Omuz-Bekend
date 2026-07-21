@@ -89,10 +89,11 @@
 - [x] Миёнафзори `logAction` (auto-log) — сохта ва ба **ҳамаи** мутатсияҳои create/update/delete-и модулҳои қаблӣ (Branches, Courses, Leads, Students, Employees, Groups+Journal, Timetable, Payments, Accounting, Administration) пайваст карда шуд
 
 ## Phase 10 — SMS Mailings (`/sms`)
-- [ ] Prisma models `SmsTemplate`, `SmsHistory`
-- [ ] CRUD `/sms/templates`
-- [ ] `POST /sms/send`
-- [ ] `GET /sms/history`
+- [x] Prisma models `SmsTemplate`, `SmsHistory`
+- [x] CRUD `/sms/templates`
+- [x] `POST /sms/send` (⚠️ `smsProvider` — stub, интизори SMS_API_KEY-и воқеӣ, масалан Osonsms.com)
+- [x] `GET /sms/history`
+- [x] Auth `forgotPassword` (Phase 1) метавонад ба ин `smsProvider` пайваст шавад, вақте provider воқеӣ илова шуд
 
 ## Phase 11 — Dashboard (`/dashboard`)
 - [ ] `GET /dashboard/stats`

@@ -14,5 +14,5 @@ export const ROLE_CREATE_MATRIX: Record<string, RoleName[]> = {
 };
 
 export const STAFF_ROLES: RoleName[] = [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR];
-export const FINANCE_ROLES: RoleName[] = [ROLES.SUPERADMIN, ROLES.DIRECTOR];
+export const FINANCE_ROLES: RoleName[] = [ROLES.DIRECTOR];
 export const USER_MANAGEMENT_ROLES: RoleName[] = [ROLES.SUPERADMIN, ROLES.DIRECTOR];

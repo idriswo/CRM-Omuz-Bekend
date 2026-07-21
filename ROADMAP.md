@@ -137,8 +137,8 @@ _Дархости иловагии корбар (2026-07-21): "4 ta roll hast st
 **Иерархияи нақшҳо:**
 - `student` — фақат маълумоти худашро мебинад: баллҳо/давомот, гурӯҳҳо, ҳамкурсҳо, coin
 - `admin` — CRUD дар Students/Groups/Journal/Branches/Courses/Leads/Employees/Timetable/SMS/Dashboard; **дастрасӣ надорад** ба Payments/Accounting (ойлик/финанс); илова кардани донишҷӯ вобаста ба toggle-и `can_add_students`
-- `superadmin` — ҳама чизи admin + Payments/Accounting + идораи `admin`/`student` (сохтан/нест кардан) + toggle-и `can_add_students`
-- `director` — дастрасии пурра ба ҳама чиз, аз ҷумла идораи `superadmin`/`admin`/`student`
+- `superadmin` — ҳама чизи admin + идораи `admin`/`student` (сохтан/нест кардан) + toggle-и `can_add_students`; **дастрасӣ надорад** ба Payments/Accounting (танҳо director)
+- `director` — дастрасии пурра ба ҳама чиз, аз ҷумла Payments/Accounting ва идораи `superadmin`/`admin`/`student`
 
 **Татбиқ:**
 - [x] `prisma/schema.prisma`: `User.student_id` (пайваст ба Student), `User.can_add_students`, модели `CoinTransaction`, `Student.coin_balance`
@@ -152,7 +152,7 @@ _Дархости иловагии корбар (2026-07-21): "4 ta roll hast st
 - [x] `PUT /users/:id/toggle-add-students` — фаъол/хомӯш кардани иҷозати admin
 - [x] `POST/GET /students/:id/coins`, `POST /students/:id/coins/spend` — иловаи дастӣ/харҷ/дидан
 - [x] Coin-и худкор (10 адад): дар `upsertJournalEntry`, вақте ҳафта пур шуд — агар ҳамаи рӯзҳо attendance=true бошанд ва миёнаи балл >90
-- [x] RBAC ба ҳамаи роутҳо пайваст шуд: Branches/Courses/Leads/Employees/Groups/Timetable/SMS/Dashboard → admin+superadmin+director; Payments/Accounting → фақат superadmin+director; Administration → фақат superadmin+director
+- [x] RBAC ба ҳамаи роутҳо пайваст шуд: Branches/Courses/Leads/Employees/Groups/Timetable/SMS/Dashboard → admin+superadmin+director; Payments/Accounting → **фақат director** (2026-07-21: аз superadmin низ гирифта шуд); Administration → фақат superadmin+director
 - ⚠️ **Маҳдудият:** "late" (дер омадан) дар JournalEntry вуҷуд надорад (танҳо `attendance: Boolean`) — бинобар ин шарти coin танҳо ба ҳозирӣ+балл такя мекунад, на ба дер омадан (ҳамон маҳдудияти Dashboard дар Phase 11)
 
 ## Phase 16 — Бехатарии иловагӣ (пас аз Phase 15)

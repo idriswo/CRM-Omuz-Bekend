@@ -5,8 +5,8 @@ import { ROLES } from "../../constants/roles";
 import { getPayments, createPayment, updatePayment, deletePayment, exportPayments } from "./payments.controller";
 
 const router = Router();
-// Финанс — фақат superadmin ва director (тибқи дархости корбар: admin ба он дастрасӣ надорад)
-router.use(authorize(ROLES.SUPERADMIN, ROLES.DIRECTOR));
+// Финанс — фақат director (тибқи дархости корбар: admin ва superadmin ба он дастрасӣ надоранд)
+router.use(authorize(ROLES.DIRECTOR));
 
 /**
  * @openapi

@@ -9,8 +9,8 @@ import { getDebtors, createDebtor, updateDebtor, deleteDebtor, exportDebtors } f
 import { getExpenses, createExpense, updateExpense, deleteExpense } from "./expenses.controller";
 
 const router = Router();
-// Финанс/ойлик — фақат superadmin ва director (admin дастрасӣ надорад)
-router.use(authorize(ROLES.SUPERADMIN, ROLES.DIRECTOR));
+// Финанс/ойлик — фақат director (admin ва superadmin дастрасӣ надоранд)
+router.use(authorize(ROLES.DIRECTOR));
 
 /**
  * @openapi

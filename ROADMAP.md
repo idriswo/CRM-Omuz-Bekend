@@ -96,15 +96,16 @@
 - [x] Auth `forgotPassword` (Phase 1) метавонад ба ин `smsProvider` пайваст шавад, вақте provider воқеӣ илова шуд
 
 ## Phase 11 — Dashboard (`/dashboard`)
-- [ ] `GET /dashboard/stats`
-- [ ] `GET /dashboard/attendance-log?date=`
-- [ ] `GET /dashboard/groups-summary`
-- [ ] `GET /dashboard/leads-chart?year=`
-- [ ] `GET /dashboard/attendance-chart?month=`
-- [ ] `GET /dashboard/income?month=`
-- [ ] `GET /dashboard/enroll-chart`
-- [ ] `GET /dashboard/employed-graduates`
-- [ ] `GET /dashboard/left-courses`
+- [x] `GET /dashboard/stats`
+- [x] `GET /dashboard/attendance-log?date=`
+- [x] `GET /dashboard/groups-summary`
+- [x] `GET /dashboard/leads-chart?year=`
+- [x] `GET /dashboard/attendance-chart?month=`
+- [x] `GET /dashboard/income?month=`
+- [x] `GET /dashboard/enroll-chart?year=`
+- [x] `GET /dashboard/employed-graduates`
+- [x] `GET /dashboard/left-courses`
+- ⚠️ **Эзоҳи муҳим:** TZ дар ин боб аз ҷадвали алоҳидаи `Attendance` (бо `status: present|absent|late`) ёдовар мешавад, вале мо дар Phase 6 attendance-ро ҳамчун майдони `Boolean` дар `JournalEntry` сохтем (мутобиқи боби 4-и TZ). Бинобар ин "late" дар ягон endpoint дастрас нест (0 бармегардад) — агар лозим шавад, майдони алоҳидаи `late` ба `JournalEntry` илова кардан мумкин аст.
 
 ## Phase 12 — Deploy (Render)
 - [ ] `render.yaml` / танзимоти Render

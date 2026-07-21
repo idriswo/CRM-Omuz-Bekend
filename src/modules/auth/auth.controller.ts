@@ -3,8 +3,8 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../utils/prisma";
 
-const ACCESS_TOKEN_TTL = "3h";
-const REFRESH_TOKEN_TTL = "7d";
+const ACCESS_TOKEN_TTL = (process.env.ACCESS_TOKEN_TTL || "3h") as jwt.SignOptions["expiresIn"];
+const REFRESH_TOKEN_TTL = (process.env.REFRESH_TOKEN_TTL || "7d") as jwt.SignOptions["expiresIn"];
 
 export const register = async (req: Request, res: Response) => {
   const { phone, password, full_name, role_id, branch_id } = req.body;

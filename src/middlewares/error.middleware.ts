@@ -11,13 +11,26 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
       return res.status(404).json({ message: "Сабт ёфт нашуд" });
     }
     if (err.code === "P2003") {
-      return res.status(409).json({ message: "Ин сабтро наметавон нест/навсозӣ кард, зеро дар ҷои дигар истифода мешавад" });
+      return res
+        .status(409)
+        .json({ message: "Ин сабтро наметавон нест/навсозӣ кард, зеро дар ҷои дигар истифода мешавад" });
     }
     if (err.code === "P2002") {
       return res.status(409).json({ message: "Ин қиммат аллакай истифода шудааст (такрорӣ)" });
     }
   }
 
-  const message = err instanceof Error ? err.message : "Хатогии номаълуми сервер";
-  res.status(500).json({ message: "Хатогии сервер", detail: message });
+  // Баъзе версияҳои Prisma ин намуди foreign-key/RESTRICT хатогиро на ҳамчун
+  // PrismaClientKnownRequestError (P2003), балки ҳамчун паёми хоми Postgres мебароранд.
+  const rawMessage = err instanceof Error ? err.message : String(err);
+  if (/foreign key constraint|violates .* constraint/i.test(rawMessage)) {
+    return res
+      .status(409)
+      .json({ message: "Ин сабтро наметавон нест/навсозӣ кард, зеро дар ҷои дигар истифода мешавад" });
+  }
+
+  res.status(500).json({
+    message: "Хатогии сервер",
+    ...(process.env.NODE_ENV !== "production" ? { detail: rawMessage } : {}),
+  });
 }

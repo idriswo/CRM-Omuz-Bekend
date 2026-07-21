@@ -183,6 +183,16 @@ _Дархости корбар: "kani bin kadom zapros kor mekunad kadomash kor 
 
 **Санҷиши пурраи дигар (ҳама 200/дуруст буданд):** Auth, Branches, Courses, Leads (create/convert/coupon), Students (CRUD+multipart+graduates+enroll), Employees, Groups+Journal (+ coin-и худкор санҷида шуд — кор мекунад!), Timetable, SMS, Payments, Accounting, Administration (+ иерархияи нақшҳо: director↔superadmin↔admin санҷида шуд, ҳама дуруст), Dashboard (9 endpoint), Coin (дастӣ+харҷ+худкор), change-password, toggle-add-students.
 
+### Зерпаҳлӯи ин фаза: хатогии дуюм (build failure) ва сабаби воқеии он
+Ҳангоми кӯшиши бартараф кардани мушкилаи боло, ман якчанд `NODE_ENV=production`-ро ба Render environment variables илова кардам (барои пинҳон кардани тафсилоти хатогӣ). Ин боис шуд, ки **build** (`npm install`) devDependencies (аз ҷумла `typescript`, `@types/*`)-ро нахонад, ва `npm run build` (`tsc`) бо садҳо хатогии "Cannot find declaration file" бишикунад. Ман ибтидо иштибоҳан гумон кардам, ки сабаб `tsconfig.json`-и `moduleResolution` аст (якчанд бор бекора тағйир додам — `node16`, `bundler`, холӣ), пеш аз он ки сабаби воқеиро ёфтам.
+
+**Ҳал:**
+- [x] `NODE_ENV=production` аз Render environment variables нест карда шуд
+- [x] Build command мустаҳкам карда шуд: `npm install --include=dev && ...` (дар `render.yaml` ва мустақим дар Render service settings) — ҳатто агар NODE_ENV боз ба хатo танзим шавад, devDependencies ҳамеша насб мешаванд
+- [x] `tsconfig.json` ба ҳолати аввалааш баргардонда шуд (`moduleResolution: "node"`) — ин ҳеҷ гоҳ мушкила набуд
+- [x] `error.middleware.ts` акнун ҳамеша тафсилотро аз клиент пинҳон мекунад (на вобаста ба NODE_ENV) — соддатар ва бехатартар
+- ⚠️ **Дарс:** ҳар боре ки Render env vars-ро тавассути API PUT мекунам, бояд **ҳамаи** калидҳои мавҷударо дар як payload гузорам (PUT ҳамаро иваз мекунад, на илова) — як бор аз рӯи иштибоҳ `JWT_SECRET`/`JWT_REFRESH_SECRET`-ро пок кардам ва бояд аз нав generate мекардам
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

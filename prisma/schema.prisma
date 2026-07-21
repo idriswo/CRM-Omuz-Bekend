@@ -81,9 +81,10 @@ model Group {
   branch            Branch        @relation(fields: [branch_id], references: [id])
   status            String        @default("active")
   tag               String?
-  students          Student[]     @relation("StudentGroups")
+  students          Student[]        @relation("StudentGroups")
   weeks             JournalWeek[]
-  created_at        DateTime      @default(now())
+  timetable_entries TimetableEntry[]
+  created_at        DateTime         @default(now())
 }
 
 model JournalWeek {
@@ -144,8 +145,9 @@ model Employee {
   branch      Branch?       @relation(fields: [branch_id], references: [id])
   phone       String
   email       String?
-  mentor_level MentorLevel?
-  created_at  DateTime      @default(now())
+  mentor_level      MentorLevel?
+  timetable_entries TimetableEntry[]
+  created_at        DateTime         @default(now())
 }
 
 model MentorLevel {
@@ -153,6 +155,21 @@ model MentorLevel {
   employee_id Int      @unique
   employee    Employee @relation(fields: [employee_id], references: [id])
   level       String
+}
+
+model TimetableEntry {
+  id          Int      @id @default(autoincrement())
+  course_name String
+  group_id    Int?
+  group       Group?   @relation(fields: [group_id], references: [id])
+  type        String // Lecture
+  start_time  DateTime
+  end_time    DateTime
+  class_room  String
+  mentor_id   Int
+  mentor      Employee @relation(fields: [mentor_id], references: [id])
+  date        DateTime
+  repeat_days Int[] // 0=Якшанбе...6=Шанбе, барои такрори ҳафтагӣ
 }
 
 model User {

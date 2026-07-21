@@ -70,9 +70,9 @@
 - [x] `GET /groups/stats`
 
 ## Phase 7 — Timetable (`/timetable`)
-- [ ] Prisma model `TimetableEntry`
-- [ ] CRUD `/timetable`
-- [ ] `GET /timetable?view=day|week|month` (+ repeat_days generation)
+- [x] Prisma model `TimetableEntry`
+- [x] CRUD `/timetable`
+- [x] `GET /timetable?view=day|week|month` (+ repeat_days generation дар JS)
 
 ## Phase 8 — Accounting (`/payments`, `/accounting/*`)
 - [ ] Prisma models `Payment`, `Budget`, `Salary`, `Avans`, `Debtor`, `Expense`

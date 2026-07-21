@@ -16,6 +16,9 @@ model Branch {
   students  Student[]
   groups    Group[]
   employees Employee[]
+  payments  Payment[]
+  salaries  Salary[]
+  avans     Avans[]
 }
 
 model Course {
@@ -46,6 +49,8 @@ model Student {
   contracts       Contract[]
   graduate_info   GraduateInfo?
   journal_entries JournalEntry[]
+  payments        Payment[]
+  debtors         Debtor[]
   created_at      DateTime       @default(now())
 }
 
@@ -84,6 +89,7 @@ model Group {
   students          Student[]        @relation("StudentGroups")
   weeks             JournalWeek[]
   timetable_entries TimetableEntry[]
+  payments          Payment[]
   created_at        DateTime         @default(now())
 }
 
@@ -147,6 +153,8 @@ model Employee {
   email       String?
   mentor_level      MentorLevel?
   timetable_entries TimetableEntry[]
+  salaries          Salary[]
+  avans             Avans[]
   created_at        DateTime         @default(now())
 }
 
@@ -170,6 +178,71 @@ model TimetableEntry {
   mentor      Employee @relation(fields: [mentor_id], references: [id])
   date        DateTime
   repeat_days Int[] // 0=Якшанбе...6=Шанбе, барои такрори ҳафтагӣ
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  student_id Int
+  student    Student  @relation(fields: [student_id], references: [id])
+  amount     Int
+  discount   Int      @default(0)
+  paid       Int
+  date       DateTime
+  group_id   Int?
+  group      Group?   @relation(fields: [group_id], references: [id])
+  branch_id  Int?
+  branch     Branch?  @relation(fields: [branch_id], references: [id])
+  status     String // active|prepayment
+}
+
+model Budget {
+  id               Int      @id @default(autoincrement())
+  category_name    String
+  from_date        DateTime
+  to_date          DateTime
+  amount_allocated Int
+  amount_spent     Int      @default(0)
+  status           String
+}
+
+model Salary {
+  id          Int      @id @default(autoincrement())
+  employee_id Int
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  amount      Int
+  date        DateTime
+  branch_id   Int
+  branch      Branch   @relation(fields: [branch_id], references: [id])
+}
+
+model Avans {
+  id          Int      @id @default(autoincrement())
+  employee_id Int
+  employee    Employee @relation(fields: [employee_id], references: [id])
+  amount      Int
+  date        DateTime
+  branch_id   Int
+  branch      Branch   @relation(fields: [branch_id], references: [id])
+}
+
+model Debtor {
+  id                Int      @id @default(autoincrement())
+  student_id        Int
+  student           Student  @relation(fields: [student_id], references: [id])
+  from_date         DateTime
+  to_date           DateTime
+  total_debt_amount Int
+  payment_per_month Int
+  total_paid_amount Int      @default(0)
+  notes             String?
+  status            String // inprogress|paid — худкор ҳисоб карда мешавад
+}
+
+model Expense {
+  id     Int      @id @default(autoincrement())
+  title  String
+  amount Int
+  date   DateTime
 }
 
 model User {

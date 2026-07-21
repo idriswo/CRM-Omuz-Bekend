@@ -6,6 +6,8 @@ import studentsRoutes from "../modules/students/students.routes";
 import employeesRoutes from "../modules/employees/employees.routes";
 import groupsRoutes from "../modules/groups/groups.routes";
 import timetableRoutes from "../modules/timetable/timetable.routes";
+import paymentsRoutes from "../modules/payments/payments.routes";
+import accountingRoutes from "../modules/accounting/accounting.routes";
 
 const router = Router();
 
@@ -16,6 +18,8 @@ router.use("/students", studentsRoutes);
 router.use("/employees", employeesRoutes);
 router.use("/groups", groupsRoutes);
 router.use("/timetable", timetableRoutes);
+router.use("/payments", paymentsRoutes);
+router.use("/accounting", accountingRoutes);
 
 // Дигар модулҳо (students, groups, employees, ...) дар фазаҳои навбатӣ инҷо илова мешаванд.
 

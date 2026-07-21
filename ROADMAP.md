@@ -75,12 +75,12 @@
 - [x] `GET /timetable?view=day|week|month` (+ repeat_days generation дар JS)
 
 ## Phase 8 — Accounting (`/payments`, `/accounting/*`)
-- [ ] Prisma models `Payment`, `Budget`, `Salary`, `Avans`, `Debtor`, `Expense`
-- [ ] CRUD `/payments` + export
-- [ ] CRUD `/accounting/budget` + `GET /accounting/budget/chart`
-- [ ] CRUD `/accounting/salary`, `/accounting/avans`
-- [ ] CRUD `/accounting/debtors` (auto status) + export
-- [ ] CRUD `/accounting/expenses`
+- [x] Prisma models `Payment`, `Budget`, `Salary`, `Avans`, `Debtor`, `Expense`
+- [x] CRUD `/payments` + export
+- [x] CRUD `/accounting/budget` + `GET /accounting/budget/chart`
+- [x] CRUD `/accounting/salary`, `/accounting/avans`
+- [x] CRUD `/accounting/debtors` (status худкор ҳисоб мешавад: paid/inprogress) + export
+- [x] CRUD `/accounting/expenses`
 
 ## Phase 9 — Administration (`/users`, `/permissions`, `/roles`, `/logs`)
 - [ ] Prisma models `Role`, `Permission`, `Log`

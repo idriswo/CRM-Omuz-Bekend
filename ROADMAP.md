@@ -124,6 +124,13 @@ _Дархости иловагии корбар (2026-07-21): "chida swagerra na
 - [x] `bearerAuth` security scheme + тугмаи Authorize дар UI
 - [x] `GET /` — паёми хуш (ба ҷои "Cannot GET /" дар root)
 
+## Phase 14 — Танзими муддати токенҳо
+_Дархости иловагии корбар (2026-07-21): "refreshtoken, access token davavit kun ... yatash 1 haftayina, yatai digasha 3 soata kun"_
+
+- [x] `access_token` → **3 соат** (пештар 15 дақиқа буд)
+- [x] `refresh_token` → **1 ҳафта** (пештар 30 рӯз буд)
+- Ҷойгиршуда дар `src/modules/auth/auth.controller.ts` (константаҳои `ACCESS_TOKEN_TTL`/`REFRESH_TOKEN_TTL`), истифода дар `login` ва `refreshToken`
+
 ## Зарросҳои иловагӣ (аз ҳамкорон, тавассути pull)
 _Ин қисм ҳар вақте ки zapros нав аз TZ илова мешавад, инҷо низ илова мегардад._
 

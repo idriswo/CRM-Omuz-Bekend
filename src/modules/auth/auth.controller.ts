@@ -3,6 +3,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../utils/prisma";
 
+const ACCESS_TOKEN_TTL = "3h";
+const REFRESH_TOKEN_TTL = "7d";
+
 export const register = async (req: Request, res: Response) => {
   const { phone, password, full_name, role_id, branch_id } = req.body;
 
@@ -25,10 +28,10 @@ export const login = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Телефон ё парол хато" });
 
   const access_token = jwt.sign({ id: user.id, role: user.role_id }, process.env.JWT_SECRET!, {
-    expiresIn: "15m",
+    expiresIn: ACCESS_TOKEN_TTL,
   });
   const refresh_token = jwt.sign({ id: user.id }, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: "30d",
+    expiresIn: REFRESH_TOKEN_TTL,
   });
 
   await prisma.user.update({ where: { id: user.id }, data: { refresh_token } });
@@ -48,7 +51,7 @@ export const refreshToken = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Invalid refresh token" });
 
     const access_token = jwt.sign({ id: user.id, role: user.role_id }, process.env.JWT_SECRET!, {
-      expiresIn: "15m",
+      expiresIn: ACCESS_TOKEN_TTL,
     });
     res.json({ access_token });
   } catch {

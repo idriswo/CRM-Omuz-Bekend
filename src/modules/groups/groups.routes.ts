@@ -11,6 +11,10 @@ import {
   getGroupsStats,
   getGroupJournal,
   addJournalWeek,
+  addJournalDate,
+  updateJournalDate,
+  deleteJournalDate,
+  deleteJournalWeek,
   upsertJournalEntry,
   getGroupSchedule,
   createGroupScheduleEntry,
@@ -70,6 +74,48 @@ router.post("/:id/journal/week", logAction("JournalWeek", "create"), addJournalW
  *     responses: { 200: { description: OK } }
  */
 router.put("/:id/journal/:weekId/students/:studentId", logAction("JournalEntry", "upsert"), upsertJournalEntry);
+
+/**
+ * @openapi
+ * /groups/{id}/journal/{weekId}/date:
+ *   post:
+ *     tags: [Groups]
+ *     summary: Илова кардани санаи нав ба ҳафтаи журнал
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: integer } }
+ *       - { in: path, name: weekId, required: true, schema: { type: integer, description: week_number } }
+ *     responses: { 201: { description: Илова шуд } }
+ */
+router.post("/:id/journal/:weekId/date", logAction("JournalWeek", "add-date"), addJournalDate);
+
+/**
+ * @openapi
+ * /groups/{id}/journal/{weekId}/date/{index}:
+ *   put:
+ *     tags: [Groups]
+ *     summary: Иваз кардани санаи index-ум дар ҳафта
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ *   delete:
+ *     tags: [Groups]
+ *     summary: Нест кардани санаи index-ум (бо сабтҳои он рӯз)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.put("/:id/journal/:weekId/date/:index", logAction("JournalWeek", "update-date"), updateJournalDate);
+router.delete("/:id/journal/:weekId/date/:index", logAction("JournalWeek", "delete-date"), deleteJournalDate);
+
+/**
+ * @openapi
+ * /groups/{id}/journal/{weekId}:
+ *   delete:
+ *     tags: [Groups]
+ *     summary: Нест кардани ҳафтаи журнал
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.delete("/:id/journal/:weekId", logAction("JournalWeek", "delete"), deleteJournalWeek);
 
 /**
  * @openapi

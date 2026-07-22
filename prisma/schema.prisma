@@ -151,6 +151,8 @@ model JournalEntry {
   score      Int?
   bonus      Int?
   exam       Int?
+  comment    String?
+  late       Int? // дақиқаи дер мондан
 
   @@unique([week_id, student_id, day_date])
 }

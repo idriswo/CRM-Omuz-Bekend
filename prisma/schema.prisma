@@ -112,6 +112,8 @@ model Group {
   duration_type     String? // month|year
   format            String? // online|offline
   telegram_link     String?
+  sheet_url         String? // линки Google Sheets, ки дар табақаи журнал нишон дода мешавад
+  sheet_id          String? // id-и ҳамон ҳуҷҷат — барои навиштани журнал ба он
   mentors           Employee[]       @relation("GroupMentors")
   students          Student[]        @relation("StudentGroups")
   schedule_slots    GroupScheduleSlot[]

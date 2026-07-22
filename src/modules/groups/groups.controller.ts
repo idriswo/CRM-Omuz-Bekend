@@ -9,6 +9,7 @@ import {
   mentorName,
   fullName,
 } from "../../utils/serialize";
+import { syncJournalSafe, syncJournalToSheet, extractSheetId, sheetsEnabled } from "../../utils/googleSheets";
 
 /** Ҳамаи маълумоте, ки барои groupDto лозим аст. */
 const groupInclude = {
@@ -277,8 +278,30 @@ export const getGroupJournal = async (req: Request, res: Response) => {
     weeks,
     chart,
     students: series.map((s) => ({ id: s.id, name: fullName(s) })),
-    sheet_url: null,
+    sheet_url: group.sheet_url ?? null,
+    sheets_sync: sheetsEnabled(),
   });
+};
+
+/** Нигоҳ доштани линки Google Sheets-и ин гурӯҳ + якбора синхронизатсия. */
+export const setJournalSheet = async (req: Request, res: Response) => {
+  const groupId = Number(req.params.id);
+  const url = req.body?.sheet_url ?? req.body?.url ?? null;
+
+  const group = await prisma.group.update({
+    where: { id: groupId },
+    data: { sheet_url: url, sheet_id: extractSheetId(url) },
+    select: { sheet_url: true, sheet_id: true },
+  });
+
+  const result = url ? await syncJournalToSheet(groupId) : { skipped: "линк тоза шуд" };
+  res.json({ success: true, ...group, sync: result });
+};
+
+/** Дастӣ фиристодани журнал ба Google Sheets (тугмаи «Sync»). */
+export const syncJournalSheet = async (req: Request, res: Response) => {
+  const result = await syncJournalToSheet(Number(req.params.id));
+  res.json({ success: !("skipped" in result), ...result });
 };
 
 export const addJournalWeek = async (req: Request, res: Response) => {
@@ -302,6 +325,7 @@ export const addJournalWeek = async (req: Request, res: Response) => {
   const students = await prisma.student.findMany({
     where: { groups: { some: { id: groupId } }, status: { not: "inactive" } },
   });
+  syncJournalSafe(groupId);
   res.status(201).json(weekDto(week, students));
 };
 
@@ -319,6 +343,7 @@ export const addJournalDate = async (req: Request, res: Response) => {
     where: { id: week.id },
     data: { dates: { set: [...week.dates, date].sort((a, b) => a.getTime() - b.getTime()) } },
   });
+  syncJournalSafe(groupId);
   res.status(201).json({ success: true });
 };
 
@@ -341,6 +366,7 @@ export const updateJournalDate = async (req: Request, res: Response) => {
     }),
     prisma.journalWeek.update({ where: { id: week.id }, data: { dates: { set: dates } } }),
   ]);
+  syncJournalSafe(groupId);
   res.json({ success: true });
 };
 
@@ -358,6 +384,7 @@ export const deleteJournalDate = async (req: Request, res: Response) => {
       data: { dates: { set: week.dates.filter((_, i) => i !== index) } },
     }),
   ]);
+  syncJournalSafe(groupId);
   res.json({ success: true });
 };
 
@@ -370,6 +397,7 @@ export const deleteJournalWeek = async (req: Request, res: Response) => {
     prisma.journalEntry.deleteMany({ where: { week_id: week.id } }),
     prisma.journalWeek.delete({ where: { id: week.id } }),
   ]);
+  syncJournalSafe(groupId);
   res.json({ success: true });
 };
 
@@ -427,6 +455,7 @@ export const upsertJournalEntry = async (req: Request, res: Response) => {
   });
 
   await maybeAwardWeeklyCoins(week.id, studentId);
+  syncJournalSafe(groupId);
 
   res.json({ success: true, entry });
 };

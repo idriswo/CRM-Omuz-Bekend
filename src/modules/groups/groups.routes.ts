@@ -16,6 +16,8 @@ import {
   deleteJournalDate,
   deleteJournalWeek,
   upsertJournalEntry,
+  setJournalSheet,
+  syncJournalSheet,
   getGroupSchedule,
   createGroupScheduleEntry,
   updateGroupScheduleEntry,
@@ -87,6 +89,32 @@ router.put("/:id/journal/:weekId/students/:studentId", logAction("JournalEntry",
  *       - { in: path, name: weekId, required: true, schema: { type: integer, description: week_number } }
  *     responses: { 201: { description: Илова шуд } }
  */
+/**
+ * @openapi
+ * /groups/{id}/journal/sheet:
+ *   put:
+ *     tags: [Groups]
+ *     summary: Нигоҳ доштани линки Google Sheets-и ин гурӯҳ (ва якбора синхронизатсия)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     requestBody:
+ *       content: { application/json: { schema: { type: object, properties: { sheet_url: { type: string } } } } }
+ *     responses: { 200: { description: OK } }
+ */
+router.put("/:id/journal/sheet", logAction("Group", "set-sheet"), setJournalSheet);
+
+/**
+ * @openapi
+ * /groups/{id}/journal/sync:
+ *   post:
+ *     tags: [Groups]
+ *     summary: Дастӣ фиристодани журнал ба Google Sheets
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 200: { description: OK } }
+ */
+router.post("/:id/journal/sync", logAction("Group", "sync-sheet"), syncJournalSheet);
+
 router.post("/:id/journal/:weekId/date", logAction("JournalWeek", "add-date"), addJournalDate);
 
 /**

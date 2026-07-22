@@ -115,9 +115,29 @@ export async function syncJournalToSheet(groupId: number) {
   return { synced: true, rows: rows.length };
 }
 
+// Синхронизатсияҳо набояд ҳамзамон раванд: ҳар яке аввал варақро тоза мекунад,
+// бинобар ин навиштани кӯҳна метавонад навро пахш кунад. Барои ҳар гурӯҳ як навбат.
+const queues = new Map<number, Promise<unknown>>();
+const pending = new Set<number>();
+
+const WRITE_DELAY_MS = 800; // таҳрирҳои паиҳам ба як навиштан ҷамъ мешаванд
+
 /** Даъвати бехатар: хатои Google набояд худи амали журналро вайрон кунад. */
 export function syncJournalSafe(groupId: number) {
-  syncJournalToSheet(groupId).catch((err) =>
-    console.error(`[google-sheets] синхронизатсия нашуд (гурӯҳи ${groupId}):`, err.message)
-  );
+  if (pending.has(groupId)) return; // аллакай дар навбат аст — маълумоти нав ҳам ҳамон ҷо меафтад
+  pending.add(groupId);
+
+  const next = (queues.get(groupId) ?? Promise.resolve())
+    .catch(() => {})
+    .then(async () => {
+      await new Promise((r) => setTimeout(r, WRITE_DELAY_MS));
+      pending.delete(groupId); // аз ин лаҳза таҳрири нав навбати навро мехоҳад
+      return syncJournalToSheet(groupId);
+    })
+    .catch((err) => {
+      pending.delete(groupId);
+      console.error(`[google-sheets] синхронизатсия нашуд (гурӯҳи ${groupId}):`, err.message);
+    });
+
+  queues.set(groupId, next);
 }

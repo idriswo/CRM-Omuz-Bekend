@@ -313,10 +313,18 @@ export const addJournalWeek = async (req: Request, res: Response) => {
     orderBy: { week_number: "desc" },
   });
 
+  // Агар рақами хостаро ҳафтаи мавҷуда гирифта бошад, рақами озоди навбатӣ гирифта мешавад —
+  // вагарна ду «Ҳафтаи 1» пайдо мешавад ва :weekId дигар як ҳафтаро аниқ намекунад.
+  const wanted = Number(week_number);
+  const taken =
+    wanted > 0 &&
+    (await prisma.journalWeek.findFirst({ where: { group_id: groupId, week_number: wanted } }));
+  const weekNumber = wanted > 0 && !taken ? wanted : (last?.week_number ?? 0) + 1;
+
   const week = await prisma.journalWeek.create({
     data: {
       group_id: groupId,
-      week_number: Number(week_number) || (last?.week_number ?? 0) + 1,
+      week_number: weekNumber,
       dates: ((dates as string[]) ?? []).map(parseJournalDate),
     },
     include: { entries: true },

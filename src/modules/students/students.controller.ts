@@ -167,8 +167,12 @@ export const createStudent = async (req: Request, res: Response) => {
     },
   });
 
-  // Login-и донишҷӯ худкор сохта мешавад, то дастрасии self-service дошта бошад
-  const credentials = await createStudentLogin(student.id, b.phone, fullName(student));
+  // Account худкор сохта намешавад — сутуни ACCOUNT «No» мемонад ва
+  // корманд онро бо тугмаи Invite (POST /students/:id/invite) месозад.
+  const credentials =
+    req.body?.create_account === true || req.body?.create_account === "true"
+      ? await createStudentLogin(student.id, b.phone, fullName(student))
+      : null;
   const created = await prisma.student.findUnique({
     where: { id: student.id },
     include: studentInclude,

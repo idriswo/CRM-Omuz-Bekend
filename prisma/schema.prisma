@@ -44,6 +44,11 @@ model Student {
   photo         String?
   status        String        @default("active") // active|inactive|finished
   left_at       DateTime? // вақте status ба inactive иваз мешавад, ин пур мешавад (барои left-courses chart)
+  left_reason   String? // сабаби тарки курс (сутуни Reason дар Left courses)
+  telegram_username String?
+  description       String?
+  is_top            Boolean @default(false) // тоҷи 👑 дар рӯйхати донишҷӯён
+  phones            Json? // [{ label: "Father", number: "93 435 4943" }]
   branch_id     Int?
   branch        Branch?       @relation(fields: [branch_id], references: [id])
   groups        Group[]       @relation("StudentGroups")
@@ -102,11 +107,28 @@ model Group {
   branch            Branch        @relation(fields: [branch_id], references: [id])
   status            String        @default("active")
   tag               String?
+  capacity          Int? // ҳадди ниҳоии ҷойҳо (Passing students X/Y)
+  description       String?
+  duration_type     String? // month|year
+  format            String? // online|offline
+  telegram_link     String?
+  mentors           Employee[]       @relation("GroupMentors")
   students          Student[]        @relation("StudentGroups")
+  schedule_slots    GroupScheduleSlot[]
   weeks             JournalWeek[]
   timetable_entries TimetableEntry[]
   payments          Payment[]
   created_at        DateTime         @default(now())
+}
+
+// Ҷадвали ҳафтагии гурӯҳ (Schedule sheet) — сода: рӯзи ҳафта + вақти сар/анҷом
+model GroupScheduleSlot {
+  id       Int    @id @default(autoincrement())
+  group_id Int
+  group    Group  @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  weekday  String // Mn|Tu|Wd|Th|Fr|Sa|Su
+  start    String // "18:00"
+  end      String // "20:00"
 }
 
 model JournalWeek {
@@ -168,6 +190,7 @@ model Employee {
   phone       String
   email       String?
   mentor_level      MentorLevel?
+  mentor_groups     Group[]       @relation("GroupMentors")
   timetable_entries TimetableEntry[]
   salaries          Salary[]
   avans             Avans[]

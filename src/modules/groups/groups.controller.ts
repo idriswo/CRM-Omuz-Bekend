@@ -1,6 +1,21 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope } from "../../utils/pagination";
+import {
+  groupDto,
+  groupStatusToDb,
+  groupStudentDto,
+  groupLeftStudentDto,
+  mentorName,
+} from "../../utils/serialize";
+
+/** Ҳамаи маълумоте, ки барои groupDto лозим аст. */
+const groupInclude = {
+  course: true,
+  branch: true,
+  schedule_slots: true,
+  students: { select: { id: true, status: true } },
+} as const;
 
 export const getGroups = async (req: Request, res: Response) => {
   const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
@@ -10,80 +25,152 @@ export const getGroups = async (req: Request, res: Response) => {
   if (search) where.name = { contains: String(search), mode: "insensitive" };
   if (course_id) where.course_id = Number(course_id);
   if (branch_id) where.branch_id = Number(branch_id);
-  if (status) where.status = status;
+  if (status) where.status = groupStatusToDb(String(status));
   if (tag) where.tag = tag;
 
+  const orderBy = ["id", "name", "start_date", "end_date", "created_at"].includes(String(sort_by))
+    ? { [String(sort_by)]: sort_dir }
+    : { id: sort_dir };
+
   const [data, total] = await Promise.all([
-    prisma.group.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { [sort_by as string]: sort_dir },
-      include: { _count: { select: { students: true } } },
-    }),
+    prisma.group.findMany({ where, skip, take: limit, orderBy, include: groupInclude }),
     prisma.group.count({ where }),
   ]);
 
-  res.json(buildEnvelope(data, total, page, limit));
+  res.json(buildEnvelope(data.map(groupDto), total, page, limit));
 };
 
 export const getGroupById = async (req: Request, res: Response) => {
   const group = await prisma.group.findUnique({
     where: { id: Number(req.params.id) },
-    include: { students: true, course: true },
-  });
-  if (!group) return res.status(404).json({ message: "Гурӯҳ ёфт нашуд" });
-  res.json(group);
-};
-
-export const createGroup = async (req: Request, res: Response) => {
-  const { name, course_id, start_date, end_date, duration, required_students, branch_id, status, tag } = req.body;
-  const group = await prisma.group.create({
-    data: {
-      name,
-      course_id: Number(course_id),
-      start_date: new Date(start_date),
-      end_date: new Date(end_date),
-      duration,
-      required_students: Number(required_students),
-      branch_id: Number(branch_id),
-      status,
-      tag,
+    include: {
+      course: true,
+      branch: true,
+      schedule_slots: true,
+      mentors: true,
+      students: { include: { user: { select: { id: true } } } },
     },
   });
-  res.status(201).json(group);
+  if (!group) return res.status(404).json({ message: "Гурӯҳ ёфт нашуд" });
+
+  res.json({
+    ...groupDto(group),
+    mentors: group.mentors.map(mentorName),
+    students: group.students.filter((s) => s.status !== "inactive").map(groupStudentDto),
+    left_course: group.students.filter((s) => s.status === "inactive").map(groupLeftStudentDto),
+  });
+};
+
+/** Майдонҳои body-и гурӯҳ (ҳам барои create, ҳам update). */
+function groupBody(req: Request, isCreate: boolean) {
+  const b = req.body ?? {};
+  return {
+    name: b.name,
+    course_id: b.course_id ? Number(b.course_id) : isCreate ? undefined : undefined,
+    start_date: b.start_date ? new Date(b.start_date) : undefined,
+    end_date: b.end_date ? new Date(b.end_date) : undefined,
+    duration: b.duration,
+    duration_type: b.duration_type,
+    required_students: b.required_students !== undefined ? Number(b.required_students) : undefined,
+    capacity: b.capacity !== undefined ? Number(b.capacity) : undefined,
+    branch_id: b.branch_id ? Number(b.branch_id) : undefined,
+    status: groupStatusToDb(b.status),
+    tag: b.tag,
+    description: b.description,
+    format: b.format,
+    telegram_link: b.telegram_link,
+  };
+}
+
+export const createGroup = async (req: Request, res: Response) => {
+  const b = groupBody(req, true);
+  const mentor_ids: number[] = Array.isArray(req.body?.mentor_ids) ? req.body.mentor_ids.map(Number) : [];
+
+  if (!b.name || !b.course_id || !b.branch_id)
+    return res.status(400).json({ message: "name, course_id ва branch_id ҳатмист" });
+
+  const created = await prisma.group.create({
+    data: {
+      name: b.name,
+      course_id: b.course_id,
+      start_date: b.start_date ?? new Date(),
+      end_date: b.end_date ?? new Date(),
+      duration: b.duration ?? "",
+      duration_type: b.duration_type,
+      required_students: b.required_students ?? 0,
+      capacity: b.capacity,
+      branch_id: b.branch_id,
+      status: b.status ?? "active",
+      tag: b.tag,
+      description: b.description,
+      format: b.format,
+      telegram_link: b.telegram_link,
+      ...(mentor_ids.length ? { mentors: { connect: mentor_ids.map((id) => ({ id })) } } : {}),
+    },
+    include: groupInclude,
+  });
+
+  res.status(201).json(groupDto(created));
 };
 
 export const updateGroup = async (req: Request, res: Response) => {
-  const { name, course_id, start_date, end_date, duration, required_students, branch_id, status, tag } = req.body;
+  const b = groupBody(req, false);
+  const mentor_ids: number[] | undefined = Array.isArray(req.body?.mentor_ids)
+    ? req.body.mentor_ids.map(Number)
+    : undefined;
+
   const group = await prisma.group.update({
     where: { id: Number(req.params.id) },
     data: {
-      name,
-      course_id: course_id ? Number(course_id) : undefined,
-      start_date: start_date ? new Date(start_date) : undefined,
-      end_date: end_date ? new Date(end_date) : undefined,
-      duration,
-      required_students: required_students ? Number(required_students) : undefined,
-      branch_id: branch_id ? Number(branch_id) : undefined,
-      status,
-      tag,
+      ...b,
+      ...(mentor_ids ? { mentors: { set: mentor_ids.map((id) => ({ id })) } } : {}),
     },
+    include: groupInclude,
   });
-  res.json(group);
+  res.json(groupDto(group));
 };
 
 export const deleteGroup = async (req: Request, res: Response) => {
-  await prisma.group.delete({ where: { id: Number(req.params.id) } });
+  const id = Number(req.params.id);
+  const weeks = await prisma.journalWeek.findMany({ where: { group_id: id }, select: { id: true } });
+
+  // Вобастагиҳо аввал тоза мешаванд, вагарна FK иҷозат намедиҳад
+  await prisma.$transaction([
+    prisma.journalEntry.deleteMany({ where: { week_id: { in: weeks.map((w) => w.id) } } }),
+    prisma.journalWeek.deleteMany({ where: { group_id: id } }),
+    prisma.groupScheduleSlot.deleteMany({ where: { group_id: id } }),
+    prisma.timetableEntry.updateMany({ where: { group_id: id }, data: { group_id: null } }),
+    prisma.payment.deleteMany({ where: { group_id: id } }),
+    prisma.group.update({ where: { id }, data: { students: { set: [] }, mentors: { set: [] } } }),
+    prisma.group.delete({ where: { id } }),
+  ]);
   res.json({ success: true });
 };
 
+/** Ранги ҳар tag — фронтенд онро бевосита истифода мебарад. */
+const TAG_COLORS: Record<string, string> = {
+  "Black list": "#f5222d",
+  Kettle: "#fa8c16",
+  Advanced: "#52c41a",
+  Handsome: "#1677ff",
+  ChatGPT: "#722ed1",
+};
+
 export const getGroupsStats = async (_req: Request, res: Response) => {
-  const stats = await prisma.group.groupBy({
-    by: ["tag"],
-    _count: { _all: true },
-  });
-  res.json(stats);
+  const rows = await prisma.group.groupBy({ by: ["tag"], _count: { _all: true } });
+  const counts = new Map(rows.filter((r) => r.tag).map((r) => [r.tag as string, r._count._all]));
+
+  const known = Object.keys(TAG_COLORS).map((label) => ({
+    label,
+    count: counts.get(label) ?? 0,
+    color: TAG_COLORS[label],
+  }));
+  // tag-ҳои ғайристандартӣ низ нишон дода мешаванд
+  const extra = [...counts.keys()]
+    .filter((t) => !(t in TAG_COLORS))
+    .map((label) => ({ label, count: counts.get(label) ?? 0, color: "#8c8c8c" }));
+
+  res.json({ data: [...known, ...extra] });
 };
 
 export const getGroupJournal = async (req: Request, res: Response) => {
@@ -180,54 +267,36 @@ export const upsertJournalEntry = async (req: Request, res: Response) => {
 
 // ===== Schedule tab — TimetableEntry-и ин гурӯҳ (nested view) =====
 
+const WEEKDAYS = ["Mn", "Tu", "Wd", "Th", "Fr", "Sa", "Su"];
+const slotDto = (s: any) => ({ id: s.id, weekday: s.weekday, start: s.start, end: s.end });
+
 export const getGroupSchedule = async (req: Request, res: Response) => {
-  const groupId = Number(req.params.id);
-  const entries = await prisma.timetableEntry.findMany({
-    where: { group_id: groupId },
-    include: { mentor: true },
-    orderBy: { date: "asc" },
-  });
-  res.json(entries);
+  const slots = await prisma.groupScheduleSlot.findMany({ where: { group_id: Number(req.params.id) } });
+  const sorted = slots.sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday));
+  res.json({ data: sorted.map(slotDto) });
 };
 
 export const createGroupScheduleEntry = async (req: Request, res: Response) => {
-  const groupId = Number(req.params.id);
-  const { course_name, type, start_time, end_time, class_room, mentor_id, date, repeat_days } = req.body;
-  const entry = await prisma.timetableEntry.create({
-    data: {
-      course_name,
-      group_id: groupId,
-      type,
-      start_time: new Date(start_time),
-      end_time: new Date(end_time),
-      class_room,
-      mentor_id: Number(mentor_id),
-      date: new Date(date),
-      repeat_days: repeat_days ?? [],
-    },
+  const { weekday, start, end } = req.body ?? {};
+  if (!weekday || !start || !end)
+    return res.status(400).json({ message: "weekday, start ва end ҳатмист" });
+
+  const slot = await prisma.groupScheduleSlot.create({
+    data: { group_id: Number(req.params.id), weekday, start, end },
   });
-  res.status(201).json(entry);
+  res.status(201).json(slotDto(slot));
 };
 
 export const updateGroupScheduleEntry = async (req: Request, res: Response) => {
-  const { course_name, type, start_time, end_time, class_room, mentor_id, date, repeat_days } = req.body;
-  const entry = await prisma.timetableEntry.update({
+  const { weekday, start, end } = req.body ?? {};
+  const slot = await prisma.groupScheduleSlot.update({
     where: { id: Number(req.params.entryId) },
-    data: {
-      course_name,
-      type,
-      start_time: start_time ? new Date(start_time) : undefined,
-      end_time: end_time ? new Date(end_time) : undefined,
-      class_room,
-      mentor_id: mentor_id ? Number(mentor_id) : undefined,
-      date: date ? new Date(date) : undefined,
-      repeat_days,
-    },
+    data: { weekday, start, end },
   });
-  res.json(entry);
+  res.json(slotDto(slot));
 };
 
 export const deleteGroupScheduleEntry = async (req: Request, res: Response) => {
-  await prisma.timetableEntry.delete({ where: { id: Number(req.params.entryId) } });
+  await prisma.groupScheduleSlot.delete({ where: { id: Number(req.params.entryId) } });
   res.json({ success: true });
 };

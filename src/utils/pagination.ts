@@ -3,7 +3,7 @@ export function getPagination(query: any) {
   const limit = Math.max(1, parseInt(query.limit) || 20);
   const skip = (page - 1) * limit;
   const sort_by = query.sort_by || "id";
-  const sort_dir = query.sort_dir === "asc" ? "asc" : "desc";
+  const sort_dir: "asc" | "desc" = query.sort_dir === "asc" ? "asc" : "desc";
   return { page, limit, skip, sort_by, sort_dir };
 }
 

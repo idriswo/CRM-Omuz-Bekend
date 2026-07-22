@@ -15,7 +15,9 @@ import {
   getGraduateGroups,
   getGraduateById,
   enrollStudent,
+  getEnrolledList,
   getEnrollChart,
+  inviteStudentAccount,
   getMyProfile,
   getMyGroups,
   getMyGroupmates,
@@ -123,6 +125,16 @@ router.get("/activity", authorize(...STAFF), getStudentActivity);
 router.post("/enroll", authorize(...STAFF), logAction("Student", "enroll"), enrollStudent);
 /**
  * @openapi
+ * /students/enroll:
+ *   get:
+ *     tags: [Students]
+ *     summary: Рӯйхати донишҷӯёни навбақайдгирифташуда (search/group_id/month)
+ *     security: [{ bearerAuth: [] }]
+ *     responses: { 200: { description: OK } }
+ */
+router.get("/enroll", authorize(...STAFF), getEnrolledList);
+/**
+ * @openapi
  * /students/enroll/chart:
  *   get:
  *     tags: [Students]
@@ -148,6 +160,18 @@ router.get("/enroll/chart", authorize(...STAFF), getEnrollChart);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 201: { description: Илова шуд } }
  */
+/**
+ * @openapi
+ * /students/{id}/invite:
+ *   post:
+ *     tags: [Students]
+ *     summary: Сохтани account (login) барои донишҷӯ ва фиристодани маълумоти дохилшавӣ
+ *     security: [{ bearerAuth: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
+ *     responses: { 201: { description: Сохта шуд } }
+ */
+router.post("/:id/invite", authorize(...STAFF), logAction("Student", "invite"), inviteStudentAccount);
+
 router.get("/:id/coins", selfStudentOr(...STAFF), getStudentCoins);
 router.post("/:id/coins", authorize(...STAFF), logAction("Coin", "add"), addCoins);
 router.post("/:id/coins/spend", authorize(...STAFF), logAction("Coin", "spend"), spendCoins);

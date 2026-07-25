@@ -11,6 +11,10 @@ import { errorHandler } from "./middlewares/error.middleware";
 
 const app = express();
 
+// Дар Render (ва ҳар reverse proxy) req.ip бе ин танзим ҳамеша IP-и proxy мешавад —
+// он гоҳ rate-limit ҳамаи корбаронро як шумурда, ҳамаро якҷо маҳдуд мекард.
+app.set("trust proxy", 1);
+
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));

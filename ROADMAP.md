@@ -18,11 +18,13 @@
 
 ## Phase 1 — Auth (`/auth`)
 - [x] Prisma model `User` (+ `refresh_token` барои иваз кардани токен)
-- [x] `POST /auth/register`
+- [x] ~~`POST /auth/register`~~ — нест карда шуд (2026-07-26): сабти кушода имкони сохтани ҳисобҳои беохир ва тафтиши рақамҳои телефонро медод. Ҳисоб танҳо аз `POST /users` ё `POST /students/:id/invite` сохта мешавад
 - [x] `POST /auth/login`
 - [x] `POST /auth/refresh-token`
 - [x] `POST /auth/forgot-password` (сохтори асосӣ тайёр; фиристодани воқеии SMS дар Phase 10 пайваст мешавад)
-- [x] `POST /auth/logout`
+- [x] `POST /auth/logout` — акнун токен талаб мекунад; `user_id` аз токен гирифта мешавад, на аз body
+- [x] Rate-limit дар route-ҳои кушода (`login` 10/15дақ, `forgot-password` 5/соат, `verify`/`reset` 10/15дақ) — `src/middlewares/rateLimit.middleware.ts`
+- [x] Коди барқарорсозӣ: `crypto.randomInt` (на `Math.random`), дар база ҳамчун bcrypt-hash, ҷавоби ягона то рақамҳо ошкор нашаванд
 
 ## Phase 2 — Branches (`/branches`)
 - [x] Prisma model `Branch`

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope, buildOrderBy, toId, toInt } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
+import { toId, toInt } from "../../utils/input";
 
 const SORTABLE = ["id", "first_name", "last_name", "position", "experience", "phone", "created_at"] as const;
 

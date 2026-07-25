@@ -23,15 +23,3 @@ export function buildOrderBy(sort_by: unknown, sort_dir: "asc" | "desc", allowed
   return { [field]: sort_dir };
 }
 
-/** id-и бутуни мусбат, вагарна undefined. */
-export function toId(value: unknown): number | undefined {
-  const n = Number(value);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
-}
-
-/** Адади бутун (метавонад 0 бошад — масалан amount, price, experience), вагарна undefined. */
-export function toInt(value: unknown): number | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
-  const n = Number(value);
-  return Number.isFinite(n) ? Math.trunc(n) : undefined;
-}

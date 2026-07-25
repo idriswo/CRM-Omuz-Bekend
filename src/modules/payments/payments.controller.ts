@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
+import { toId, toInt, toDate } from "../../utils/input";
 import { exportToXlsx } from "../../utils/export";
 
 const SORTABLE = ["id", "amount", "paid", "discount", "date", "status"] as const;
@@ -51,17 +52,36 @@ export const getPrepayments = async (req: Request, res: Response) => {
   res.json(buildEnvelope(data, total, page, limit));
 };
 
+const PAYMENT_STATUSES = ["active", "prepayment"];
+
 export const createPayment = async (req: Request, res: Response) => {
-  const { student_id, amount, discount, paid, date, group_id, branch_id, status } = req.body;
+  const { student_id, amount, discount, paid, date, group_id, branch_id, status } = req.body ?? {};
+
+  const studentId = toId(student_id);
+  const amountValue = toInt(amount);
+  const paidValue = toInt(paid);
+  const dateValue = toDate(date);
+
+  if (!studentId) return res.status(400).json({ message: "student_id ҳатмист" });
+  if (amountValue === undefined) return res.status(400).json({ message: "amount ҳатмист" });
+  if (paidValue === undefined) return res.status(400).json({ message: "paid ҳатмист" });
+  if (!dateValue) return res.status(400).json({ message: "date ҳатмист ва бояд санаи дуруст бошад" });
+  if (!PAYMENT_STATUSES.includes(status)) {
+    return res.status(400).json({ message: `status бояд яке аз инҳо бошад: ${PAYMENT_STATUSES.join(", ")}` });
+  }
+
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
+
   const payment = await prisma.payment.create({
     data: {
-      student_id: Number(student_id),
-      amount: Number(amount),
-      discount: discount ? Number(discount) : undefined,
-      paid: Number(paid),
-      date: new Date(date),
-      group_id: group_id ? Number(group_id) : undefined,
-      branch_id: branch_id ? Number(branch_id) : undefined,
+      student_id: studentId,
+      amount: amountValue,
+      discount: toInt(discount),
+      paid: paidValue,
+      date: dateValue,
+      group_id: toId(group_id),
+      branch_id: toId(branch_id),
       status,
     },
   });
@@ -69,17 +89,27 @@ export const createPayment = async (req: Request, res: Response) => {
 };
 
 export const updatePayment = async (req: Request, res: Response) => {
-  const { student_id, amount, discount, paid, date, group_id, branch_id, status } = req.body;
+  const { student_id, amount, discount, paid, date, group_id, branch_id, status } = req.body ?? {};
+
+  if (date !== undefined && !toDate(date)) {
+    return res.status(400).json({ message: "date санаи дуруст нест" });
+  }
+  if (status !== undefined && !PAYMENT_STATUSES.includes(status)) {
+    return res.status(400).json({ message: `status бояд яке аз инҳо бошад: ${PAYMENT_STATUSES.join(", ")}` });
+  }
+
   const payment = await prisma.payment.update({
     where: { id: Number(req.params.id) },
     data: {
-      student_id: student_id ? Number(student_id) : undefined,
-      amount: amount ? Number(amount) : undefined,
-      discount: discount !== undefined ? Number(discount) : undefined,
-      paid: paid ? Number(paid) : undefined,
-      date: date ? new Date(date) : undefined,
-      group_id: group_id ? Number(group_id) : undefined,
-      branch_id: branch_id ? Number(branch_id) : undefined,
+      student_id: toId(student_id),
+      amount: toInt(amount),
+      discount: toInt(discount),
+      // toInt, на `paid ? ... : undefined` — вагарна paid=0 партофта мешуд
+      // ва пардохтро ба сифр баргардонидан имконнопазир буд
+      paid: toInt(paid),
+      date: toDate(date),
+      group_id: toId(group_id),
+      branch_id: toId(branch_id),
       status,
     },
   });

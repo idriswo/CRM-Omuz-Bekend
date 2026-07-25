@@ -2,7 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope, buildOrderBy, toId, toInt } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
+import { toId, toInt } from "../../utils/input";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
   studentDto,

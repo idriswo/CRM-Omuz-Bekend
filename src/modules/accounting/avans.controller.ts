@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
+import { toId, toInt, toDate } from "../../utils/input";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 
 const SORTABLE = ["id", "amount", "date"] as const;
@@ -26,22 +27,36 @@ export const getAvans = async (req: Request, res: Response) => {
 };
 
 export const createAvans = async (req: Request, res: Response) => {
-  const { employee_id, amount, date, branch_id } = req.body;
+  const { employee_id, amount, date, branch_id } = req.body ?? {};
+  const employeeId = toId(employee_id);
+  const branchId = toId(branch_id);
+  const amountValue = toInt(amount);
+  const dateValue = toDate(date);
+
+  if (!employeeId || !branchId || amountValue === undefined || !dateValue) {
+    return res
+      .status(400)
+      .json({ message: "employee_id, branch_id, amount ва санаи дурусти date ҳатмист" });
+  }
+
   const avans = await prisma.avans.create({
-    data: { employee_id: Number(employee_id), amount: Number(amount), date: new Date(date), branch_id: Number(branch_id) },
+    data: { employee_id: employeeId, amount: amountValue, date: dateValue, branch_id: branchId },
   });
   res.status(201).json(avans);
 };
 
 export const updateAvans = async (req: Request, res: Response) => {
-  const { employee_id, amount, date, branch_id } = req.body;
+  const { employee_id, amount, date, branch_id } = req.body ?? {};
+  if (date !== undefined && !toDate(date)) {
+    return res.status(400).json({ message: "date санаи дуруст нест" });
+  }
   const avans = await prisma.avans.update({
     where: { id: Number(req.params.id) },
     data: {
-      employee_id: employee_id ? Number(employee_id) : undefined,
-      amount: amount ? Number(amount) : undefined,
-      date: date ? new Date(date) : undefined,
-      branch_id: branch_id ? Number(branch_id) : undefined,
+      employee_id: toId(employee_id),
+      amount: toInt(amount),
+      date: toDate(date),
+      branch_id: toId(branch_id),
     },
   });
   res.json(avans);

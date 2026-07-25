@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
+import { toId, toInt, toDate } from "../../utils/input";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { exportToXlsx } from "../../utils/export";
 
@@ -35,17 +36,36 @@ export const getDebtors = async (req: Request, res: Response) => {
 };
 
 export const createDebtor = async (req: Request, res: Response) => {
-  const { student_id, from_date, to_date, total_debt_amount, payment_per_month, total_paid_amount, notes } = req.body;
-  const paidAmount = total_paid_amount ? Number(total_paid_amount) : 0;
-  const debtAmount = Number(total_debt_amount);
+  const { student_id, from_date, to_date, total_debt_amount, payment_per_month, total_paid_amount, notes } =
+    req.body ?? {};
+
+  const studentId = toId(student_id);
+  const fromDate = toDate(from_date);
+  const toDateValue = toDate(to_date);
+  const debtAmount = toInt(total_debt_amount);
+  const perMonth = toInt(payment_per_month);
+  const paidAmount = toInt(total_paid_amount) ?? 0;
+
+  if (!studentId || !fromDate || !toDateValue || debtAmount === undefined || perMonth === undefined) {
+    return res.status(400).json({
+      message:
+        "student_id, total_debt_amount, payment_per_month ва санаҳои дурусти from_date/to_date ҳатмист",
+    });
+  }
+  if (fromDate > toDateValue) {
+    return res.status(400).json({ message: "from_date наметавонад аз to_date дертар бошад" });
+  }
+
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
 
   const debtor = await prisma.debtor.create({
     data: {
-      student_id: Number(student_id),
-      from_date: new Date(from_date),
-      to_date: new Date(to_date),
+      student_id: studentId,
+      from_date: fromDate,
+      to_date: toDateValue,
       total_debt_amount: debtAmount,
-      payment_per_month: Number(payment_per_month),
+      payment_per_month: perMonth,
       total_paid_amount: paidAmount,
       notes,
       status: computeStatus(debtAmount, paidAmount),
@@ -57,19 +77,23 @@ export const createDebtor = async (req: Request, res: Response) => {
 export const updateDebtor = async (req: Request, res: Response) => {
   const { from_date, to_date, total_debt_amount, payment_per_month, total_paid_amount, notes } = req.body;
 
+  if ((from_date !== undefined && !toDate(from_date)) || (to_date !== undefined && !toDate(to_date))) {
+    return res.status(400).json({ message: "from_date ё to_date санаи дуруст нест" });
+  }
+
   const existing = await prisma.debtor.findUnique({ where: { id: Number(req.params.id) } });
   if (!existing) return res.status(404).json({ message: "Қарздор ёфт нашуд" });
 
-  const debtAmount = total_debt_amount !== undefined ? Number(total_debt_amount) : existing.total_debt_amount;
-  const paidAmount = total_paid_amount !== undefined ? Number(total_paid_amount) : existing.total_paid_amount;
+  const debtAmount = toInt(total_debt_amount) ?? existing.total_debt_amount;
+  const paidAmount = toInt(total_paid_amount) ?? existing.total_paid_amount;
 
   const debtor = await prisma.debtor.update({
     where: { id: existing.id },
     data: {
-      from_date: from_date ? new Date(from_date) : undefined,
-      to_date: to_date ? new Date(to_date) : undefined,
+      from_date: toDate(from_date),
+      to_date: toDate(to_date),
       total_debt_amount: debtAmount,
-      payment_per_month: payment_per_month !== undefined ? Number(payment_per_month) : undefined,
+      payment_per_month: toInt(payment_per_month),
       total_paid_amount: paidAmount,
       notes,
       status: computeStatus(debtAmount, paidAmount),

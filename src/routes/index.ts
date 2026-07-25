@@ -24,9 +24,11 @@ router.use("/groups", groupsRoutes);
 router.use("/timetable", timetableRoutes);
 router.use("/payments", paymentsRoutes);
 router.use("/accounting", accountingRoutes);
-router.use("/", administrationRoutes); // /users, /roles, /permissions, /logs
 router.use("/sms", smsRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationsRoutes);
+// Дар "/" насб мешавад, бинобар ин ҳатман охирин: миёнафзори authorize-и он
+// вагарна ба ҳамаи route-ҳои баъдина низ татбиқ мешуд.
+router.use("/", administrationRoutes); // /users, /roles, /permissions, /logs
 
 export default router;

@@ -65,10 +65,31 @@ export const convertLeadToClient = async (req: Request, res: Response) => {
 };
 
 export const transferLeads = async (req: Request, res: Response) => {
-  const { lead_ids, target_course_id } = req.body;
+  const { lead_ids, target_course_id } = req.body ?? {};
+
+  // ⚠️ lead_ids ҳатман бояд массиви ғайрихолӣ бошад. Агар undefined гузарад,
+  // Prisma филтри `in`-ро тамоман мепартояд ва updateMany ба ҲАМАИ лидҳо
+  // татбиқ мешавад — яъне course_id-и тамоми базаро вайрон мекунад.
+  if (!Array.isArray(lead_ids) || lead_ids.length === 0) {
+    return res.status(400).json({ message: "lead_ids бояд массиви ғайрихолии id бошад" });
+  }
+
+  const ids = lead_ids.map(Number);
+  if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+    return res.status(400).json({ message: "lead_ids бояд танҳо аз id-и бутуни мусбат иборат бошад" });
+  }
+
+  const courseId = Number(target_course_id);
+  if (!Number.isInteger(courseId) || courseId <= 0) {
+    return res.status(400).json({ message: "target_course_id ҳатмист" });
+  }
+
+  const course = await prisma.course.findUnique({ where: { id: courseId } });
+  if (!course) return res.status(404).json({ message: "Курс ёфт нашуд" });
+
   const result = await prisma.lead.updateMany({
-    where: { id: { in: lead_ids } },
-    data: { course_id: target_course_id },
+    where: { id: { in: ids } },
+    data: { course_id: courseId },
   });
   res.json({ success: true, count: result.count });
 };

@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { exportToXlsx } from "../../utils/export";
+
+const SORTABLE = ["id", "from_date", "to_date", "total_debt_amount", "total_paid_amount", "status"] as const;
 
 const computeStatus = (total_debt_amount: number, total_paid_amount: number) =>
   total_paid_amount >= total_debt_amount ? "paid" : "inprogress";
@@ -23,7 +25,7 @@ export const getDebtors = async (req: Request, res: Response) => {
       where,
       skip,
       take: limit,
-      orderBy: { [sort_by as string]: sort_dir },
+      orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE),
       include: { student: true },
     }),
     prisma.debtor.count({ where }),

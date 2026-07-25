@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy, toInt } from "../../utils/pagination";
+
+const SORTABLE = ["id", "name", "duration", "price"] as const;
 
 export const getCourses = async (req: Request, res: Response) => {
   const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
@@ -10,7 +12,7 @@ export const getCourses = async (req: Request, res: Response) => {
   if (search) where.name = { contains: String(search), mode: "insensitive" };
 
   const [data, total] = await Promise.all([
-    prisma.course.findMany({ where, skip, take: limit, orderBy: { [sort_by as string]: sort_dir } }),
+    prisma.course.findMany({ where, skip, take: limit, orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE) }),
     prisma.course.count({ where }),
   ]);
 
@@ -24,16 +26,22 @@ export const getCourseById = async (req: Request, res: Response) => {
 };
 
 export const createCourse = async (req: Request, res: Response) => {
-  const { name, description, duration, price } = req.body;
-  const course = await prisma.course.create({ data: { name, description, duration, price } });
+  const { name, description, duration, price } = req.body ?? {};
+  const priceValue = toInt(price);
+  if (!name || !duration || priceValue === undefined) {
+    return res.status(400).json({ message: "name, duration ва price ҳатмист" });
+  }
+  const course = await prisma.course.create({
+    data: { name, description, duration, price: priceValue },
+  });
   res.status(201).json(course);
 };
 
 export const updateCourse = async (req: Request, res: Response) => {
-  const { name, description, duration, price } = req.body;
+  const { name, description, duration, price } = req.body ?? {};
   const course = await prisma.course.update({
     where: { id: Number(req.params.id) },
-    data: { name, description, duration, price },
+    data: { name, description, duration, price: toInt(price) },
   });
   res.json(course);
 };

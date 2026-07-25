@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy, toId, toInt } from "../../utils/pagination";
 import { exportToXlsx } from "../../utils/export";
+
+const SORTABLE = ["id", "full_name", "phone", "type", "utm_source", "created_at"] as const;
 
 const leadsWhere = (query: any) => {
   const { search, course_id, type, utm_source } = query;
@@ -18,7 +20,7 @@ export const getLeads = async (req: Request, res: Response) => {
   const where = leadsWhere(req.query);
 
   const [data, total] = await Promise.all([
-    prisma.lead.findMany({ where, skip, take: limit, orderBy: { [sort_by as string]: sort_dir } }),
+    prisma.lead.findMany({ where, skip, take: limit, orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE) }),
     prisma.lead.count({ where }),
   ]);
 
@@ -32,18 +34,22 @@ export const getLeadById = async (req: Request, res: Response) => {
 };
 
 export const createLead = async (req: Request, res: Response) => {
-  const { full_name, phone, lesson_time, course_id, utm_source, occupation, notes } = req.body;
+  const { full_name, phone, lesson_time, course_id, utm_source, occupation, notes } = req.body ?? {};
+  if (!full_name || !phone) {
+    return res.status(400).json({ message: "full_name ва phone ҳатмист" });
+  }
   const lead = await prisma.lead.create({
-    data: { full_name, phone, lesson_time, course_id, utm_source, occupation, notes },
+    // course_id аз клиент ҳамчун сатр меояд ("3") — бе toId Prisma 500 медод
+    data: { full_name, phone, lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
   });
   res.status(201).json(lead);
 };
 
 export const updateLead = async (req: Request, res: Response) => {
-  const { full_name, phone, lesson_time, course_id, utm_source, occupation, notes } = req.body;
+  const { full_name, phone, lesson_time, course_id, utm_source, occupation, notes } = req.body ?? {};
   const lead = await prisma.lead.update({
     where: { id: Number(req.params.id) },
-    data: { full_name, phone, lesson_time, course_id, utm_source, occupation, notes },
+    data: { full_name, phone, lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
   });
   res.json(lead);
 };
@@ -117,7 +123,13 @@ export const getCoupons = async (req: Request, res: Response) => {
 };
 
 export const createCoupon = async (req: Request, res: Response) => {
-  const { code, discount, lead_id } = req.body;
-  const coupon = await prisma.coupon.create({ data: { code, discount, lead_id } });
+  const { code, discount, lead_id } = req.body ?? {};
+  const discountValue = toInt(discount);
+  if (!code || discountValue === undefined) {
+    return res.status(400).json({ message: "code ва discount ҳатмист" });
+  }
+  const coupon = await prisma.coupon.create({
+    data: { code, discount: discountValue, lead_id: toId(lead_id) },
+  });
   res.status(201).json(coupon);
 };

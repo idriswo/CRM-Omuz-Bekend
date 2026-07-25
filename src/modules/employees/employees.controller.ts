@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy, toId, toInt } from "../../utils/pagination";
+
+const SORTABLE = ["id", "first_name", "last_name", "position", "experience", "phone", "created_at"] as const;
 
 export const getEmployees = async (req: Request, res: Response) => {
   const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
@@ -20,7 +22,7 @@ export const getEmployees = async (req: Request, res: Response) => {
       where,
       skip,
       take: limit,
-      orderBy: { [sort_by as string]: sort_dir },
+      orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE),
       include: { mentor_level: true },
     }),
     prisma.employee.count({ where }),
@@ -39,14 +41,18 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 };
 
 export const createEmployee = async (req: Request, res: Response) => {
-  const { first_name, last_name, position, experience, branch_id, phone, email } = req.body;
+  const { first_name, last_name, position, experience, branch_id, phone, email } = req.body ?? {};
+  if (!first_name || !last_name || !position || !phone) {
+    return res.status(400).json({ message: "first_name, last_name, position ва phone ҳатмист" });
+  }
   const employee = await prisma.employee.create({
     data: {
       first_name,
       last_name,
       position,
-      experience,
-      branch_id: branch_id ? Number(branch_id) : undefined,
+      // experience ҳамчун сатр ("5") меомад ва Prisma-ро ба 500 мебурд
+      experience: toInt(experience),
+      branch_id: toId(branch_id),
       phone,
       email,
     },
@@ -55,15 +61,15 @@ export const createEmployee = async (req: Request, res: Response) => {
 };
 
 export const updateEmployee = async (req: Request, res: Response) => {
-  const { first_name, last_name, position, experience, branch_id, phone, email } = req.body;
+  const { first_name, last_name, position, experience, branch_id, phone, email } = req.body ?? {};
   const employee = await prisma.employee.update({
     where: { id: Number(req.params.id) },
     data: {
       first_name,
       last_name,
       position,
-      experience,
-      branch_id: branch_id ? Number(branch_id) : undefined,
+      experience: toInt(experience),
+      branch_id: toId(branch_id),
       phone,
       email,
     },

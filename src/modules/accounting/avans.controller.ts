@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
+
+const SORTABLE = ["id", "amount", "date"] as const;
 
 export const getAvans = async (req: Request, res: Response) => {
   const { page, limit, skip, sort_by, sort_dir } = getPagination(req.query);
@@ -14,7 +16,7 @@ export const getAvans = async (req: Request, res: Response) => {
       where,
       skip,
       take: limit,
-      orderBy: { [sort_by as string]: sort_dir },
+      orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE),
       include: { employee: true },
     }),
     prisma.avans.count({ where }),

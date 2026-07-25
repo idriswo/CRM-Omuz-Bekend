@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import {
   groupDto,
   groupStatusToDb,
@@ -10,6 +10,8 @@ import {
   fullName,
 } from "../../utils/serialize";
 import { syncJournalSafe, syncJournalToSheet, extractSheetId, sheetsEnabled } from "../../utils/googleSheets";
+
+const SORTABLE = ["id", "name", "start_date", "end_date", "created_at"] as const;
 
 /** Ҳамаи маълумоте, ки барои groupDto лозим аст. */
 const groupInclude = {
@@ -30,9 +32,7 @@ export const getGroups = async (req: Request, res: Response) => {
   if (status) where.status = groupStatusToDb(String(status));
   if (tag) where.tag = tag;
 
-  const orderBy = ["id", "name", "start_date", "end_date", "created_at"].includes(String(sort_by))
-    ? { [String(sort_by)]: sort_dir }
-    : { id: sort_dir };
+  const orderBy = buildOrderBy(sort_by, sort_dir, SORTABLE);
 
   const [data, total] = await Promise.all([
     prisma.group.findMany({ where, skip, take: limit, orderBy, include: groupInclude }),

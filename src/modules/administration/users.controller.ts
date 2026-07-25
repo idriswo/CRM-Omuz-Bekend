@@ -1,9 +1,11 @@
 import { Response } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
+
+const SORTABLE = ["id", "phone", "full_name", "created_at"] as const;
 
 const safeUser = (u: any) => {
   const { password, refresh_token, ...rest } = u;
@@ -24,7 +26,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       where,
       skip,
       take: limit,
-      orderBy: { [sort_by as string]: sort_dir },
+      orderBy: buildOrderBy(sort_by, sort_dir, SORTABLE),
       include: { role: true },
     }),
     prisma.user.count({ where }),

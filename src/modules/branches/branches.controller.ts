@@ -16,7 +16,11 @@ export const getBranchById = async (req: Request, res: Response) => {
 };
 
 export const createBranch = async (req: Request, res: Response) => {
-  const { title, city, district, address } = req.body;
+  const { title, city, district, address } = req.body ?? {};
+  // Ҳар чор майдон дар schema ҳатмист — бе ин тафтиш Prisma 500 медод
+  if (!title || !city || !district || !address) {
+    return res.status(400).json({ message: "title, city, district ва address ҳатмист" });
+  }
   const branch = await prisma.branch.create({ data: { title, city, district, address } });
   res.status(201).json(branch);
 };

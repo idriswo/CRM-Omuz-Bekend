@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { prisma } from "../../utils/prisma";
-import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { getPagination, buildEnvelope, buildOrderBy, toId, toInt } from "../../utils/pagination";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
   studentDto,
@@ -28,6 +28,8 @@ const MONTHS = [
   "November",
   "December",
 ];
+
+const SORTABLE = ["id", "first_name", "last_name", "created_at", "status"] as const;
 
 function generatePassword() {
   return crypto.randomBytes(4).toString("hex"); // 8 аломат, масалан "a1b2c3d4"
@@ -121,9 +123,7 @@ export const getStudents = async (req: Request, res: Response) => {
   if (contract_status) and.push(contractWhere(String(contract_status)));
 
   const where = and.length ? { AND: and } : {};
-  const orderBy = ["id", "first_name", "last_name", "created_at", "status"].includes(String(sort_by))
-    ? { [String(sort_by)]: sort_dir }
-    : { id: sort_dir };
+  const orderBy = buildOrderBy(sort_by, sort_dir, SORTABLE);
 
   const [data, total] = await Promise.all([
     prisma.student.findMany({ where, skip, take: limit, orderBy, include: studentInclude }),
@@ -374,23 +374,51 @@ export const getGraduateById = async (req: Request, res: Response) => {
 // ===== Enroll =====
 
 export const enrollStudent = async (req: Request, res: Response) => {
-  const { student_id, group_id, new_student } = req.body;
-  let studentId = Number(student_id);
+  const { student_id, group_id, new_student } = req.body ?? {};
 
-  if (!studentId && new_student) {
+  const groupId = toId(group_id);
+  if (!groupId) return res.status(400).json({ message: "group_id ҳатмист" });
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) return res.status(404).json({ message: "Гурӯҳ ёфт нашуд" });
+
+  let studentId = toId(student_id);
+
+  if (!studentId) {
+    if (!new_student || typeof new_student !== "object") {
+      return res.status(400).json({ message: "student_id ё new_student ҳатмист" });
+    }
+    if (!new_student.first_name || !new_student.last_name || !new_student.phone) {
+      return res
+        .status(400)
+        .json({ message: "new_student бояд first_name, last_name ва phone дошта бошад" });
+    }
+
+    // Майдонҳо як-як гирифта мешаванд, на бо spread — вагарна клиент метавонист
+    // status, coin_balance, is_top ё ҳар сутуни дигарро дилхоҳ таъин кунад.
     const created = await prisma.student.create({
       data: {
-        ...new_student,
+        first_name: String(new_student.first_name),
+        last_name: String(new_student.last_name),
+        phone: String(new_student.phone),
         birth_date: new_student.birth_date ? new Date(new_student.birth_date) : new Date("2000-01-01"),
+        gender: new_student.gender ?? "male",
+        address: new_student.address,
+        email: new_student.email,
+        father_phone: new_student.father_phone,
+        telegram_username: new_student.telegram_username,
+        description: new_student.description,
+        branch_id: toId(new_student.branch_id),
       },
     });
     studentId = created.id;
+  } else {
+    const exists = await prisma.student.findUnique({ where: { id: studentId } });
+    if (!exists) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
   }
-  if (!studentId) return res.status(400).json({ message: "student_id ҳатмист" });
-  if (!group_id) return res.status(400).json({ message: "group_id ҳатмист" });
 
   await prisma.group.update({
-    where: { id: Number(group_id) },
+    where: { id: groupId },
     data: { students: { connect: { id: studentId } } },
   });
   res.json({ success: true, student_id: studentId });

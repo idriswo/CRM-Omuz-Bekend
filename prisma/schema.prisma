@@ -313,6 +313,9 @@ model User {
   student           Student? @relation(fields: [student_id], references: [id])
   // Танҳо барои role=admin маъно дорад: superadmin/director метавонанд ин имконро хомӯш/фаъол кунанд
   can_add_students  Boolean  @default(true)
+  // true барои ҳисобҳое, ки паролашон аз тарафи система сохта ва бо SMS фиристода шудааст.
+  // То иваз накардани парол корбар ба ягон бахши система дастрасӣ надорад.
+  must_change_password Boolean @default(false)
   refresh_token     String?
   reset_code        String?
   reset_code_expires DateTime?

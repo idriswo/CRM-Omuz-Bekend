@@ -5,6 +5,8 @@ import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/paginati
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
 import { normalizePhone } from "../../utils/phone";
+import { generateTempPassword } from "../../utils/password";
+import { smsProvider, credentialsMessage } from "../../utils/smsProvider";
 
 const SORTABLE = ["id", "phone", "full_name", "created_at"] as const;
 
@@ -47,7 +49,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       .status(400)
       .json({ message: `Рақами телефон нодуруст аст: "${phone}". Намуна: 902223344` });
   }
-  if (typeof password !== "string" || password.length < 8) {
+  // password ихтиёрӣ аст: агар наомада бошад, система худаш месозад ва бо SMS
+  // мефиристад. Ин роҳи асосист — парол дар чат/лог намемонад.
+  if (password !== undefined && (typeof password !== "string" || password.length < 8)) {
     return res.status(400).json({ message: "Парол бояд на камтар аз 8 аломат бошад" });
   }
   if (!full_name) return res.status(400).json({ message: "full_name ҳатмист" });
@@ -59,7 +63,10 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     return res.status(403).json({ message: `Шумо ҳуқуқ надоред нақши "${targetRole?.name}"-ро созед` });
   }
 
-  const hashed = await bcrypt.hash(password, 10);
+  const generated = password === undefined;
+  const plainPassword = generated ? generateTempPassword() : (password as string);
+  const hashed = await bcrypt.hash(plainPassword, 10);
+
   const user = await prisma.user.create({
     data: {
       phone: phoneValue,
@@ -67,9 +74,30 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       full_name,
       role_id: Number(role_id),
       branch_id: branch_id ? Number(branch_id) : undefined,
+      // Пароли сохташуда тавассути SMS меравад — то ивази он ҳисоб маҳдуд аст
+      must_change_password: generated,
     },
   });
-  res.status(201).json(safeUser(user));
+
+  // Ноком шудани SMS набояд сохтани ҳисобро бекор кунад — корбар аллакай
+  // сохта шуд ва credential дар ҷавоб бармегардад, то корманд онро дастӣ диҳад.
+  let sms_sent = false;
+  let sms_error: string | undefined;
+  try {
+    await smsProvider.send(phoneValue, credentialsMessage({ full_name, phone: phoneValue, password: plainPassword }));
+    sms_sent = true;
+  } catch (err) {
+    sms_error = err instanceof Error ? err.message : String(err);
+    console.error(`[users] SMS ба ${phoneValue} нарасид:`, sms_error);
+  }
+
+  res.status(201).json({
+    ...safeUser(user),
+    sms_sent,
+    ...(sms_error ? { sms_error } : {}),
+    // Парол танҳо ҳамин як бор нишон дода мешавад — дар база hash аст
+    login_credentials: { phone: phoneValue, password: plainPassword },
+  });
 };
 
 export const updateUser = async (req: AuthRequest, res: Response) => {

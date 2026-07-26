@@ -6,6 +6,7 @@ import swaggerUi from "swagger-ui-express";
 import authRoutes from "./modules/auth/auth.routes";
 import restRoutes from "./routes";
 import { authMiddleware } from "./middlewares/auth.middleware";
+import { requirePasswordChanged } from "./middlewares/passwordChange.middleware";
 import { swaggerSpec } from "./swagger";
 import { errorHandler } from "./middlewares/error.middleware";
 
@@ -23,8 +24,10 @@ app.get("/", (_req, res) => res.json({ name: "Omuz CRM Backend API", status: "ru
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// /auth берун аз requirePasswordChanged аст — вагарна корбаре, ки бояд
+// паролашро иваз кунад, ба change-password ҳам роҳ намеёфт
 app.use("/api/auth", authRoutes); // кушода, бе токен
-app.use("/api", authMiddleware, restRoutes); // ҳамаи боқимонда бо токен
+app.use("/api", authMiddleware, requirePasswordChanged, restRoutes); // ҳамаи боқимонда бо токен
 
 app.use((req, res) => res.status(404).json({ message: "Route ёфт нашуд" }));
 app.use(errorHandler); // ҳатман дар охир — ҳамаи хатогиҳои async-ро мегирад

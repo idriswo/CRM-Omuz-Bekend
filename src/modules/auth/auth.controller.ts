@@ -20,7 +20,12 @@ const REFRESH_TOKEN_TTL = (process.env.REFRESH_TOKEN_TTL || "7d") as jwt.SignOpt
 async function buildAccessToken(userId: number) {
   const user = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   return jwt.sign(
-    { id: user!.id, role: user!.role?.name, student_id: user!.student_id },
+    {
+      id: user!.id,
+      role: user!.role?.name,
+      student_id: user!.student_id,
+      must_change_password: user!.must_change_password,
+    },
     process.env.JWT_SECRET!,
     { expiresIn: ACCESS_TOKEN_TTL }
   );
@@ -45,7 +50,12 @@ export const login = async (req: Request, res: Response) => {
     return res.status(401).json({ message: "Телефон ё парол хато" });
 
   const access_token = jwt.sign(
-    { id: user.id, role: user.role?.name, student_id: user.student_id },
+    {
+      id: user.id,
+      role: user.role?.name,
+      student_id: user.student_id,
+      must_change_password: user.must_change_password,
+    },
     process.env.JWT_SECRET!,
     { expiresIn: ACCESS_TOKEN_TTL }
   );
@@ -56,7 +66,9 @@ export const login = async (req: Request, res: Response) => {
   await prisma.user.update({ where: { id: user.id }, data: { refresh_token } });
 
   const { password: _pw, refresh_token: _rt, ...safeUser } = user;
-  res.json({ access_token, refresh_token, user: safeUser });
+  // must_change_password дар решаи ҷавоб низ — то фронтенд фавран ба
+  // экрани ивази парол равад, на пас аз гирифтани 403
+  res.json({ access_token, refresh_token, must_change_password: user.must_change_password, user: safeUser });
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
@@ -140,8 +152,15 @@ export const resetPassword = async (req: Request, res: Response) => {
   const hashed = await bcrypt.hash(new_password, 10);
   await prisma.user.update({
     where: { id: user.id },
-    // refresh_token низ тоза мешавад — то session-и кӯҳна (эҳтимолан аз они дузд) бекор шавад
-    data: { password: hashed, reset_code: null, reset_code_expires: null, refresh_token: null },
+    // refresh_token низ тоза мешавад — то session-и кӯҳна (эҳтимолан аз они дузд) бекор шавад.
+    // must_change_password низ: корбар акнун паролро худаш интихоб кардааст.
+    data: {
+      password: hashed,
+      reset_code: null,
+      reset_code_expires: null,
+      refresh_token: null,
+      must_change_password: false,
+    },
   });
   res.json({ success: true, message: "Парол иваз шуд. Бо парoли нав ворид шавед." });
 };
@@ -163,8 +182,16 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
   if (!user || typeof old_password !== "string" || !(await bcrypt.compare(old_password, user.password))) {
     return res.status(401).json({ message: "Паролии кӯҳна хато аст" });
   }
+  if (await bcrypt.compare(new_password, user.password)) {
+    return res.status(400).json({ message: "Паролии нав бояд аз кӯҳна фарқ кунад" });
+  }
+
   const hashed = await bcrypt.hash(new_password, 10);
-  await prisma.user.update({ where: { id: user.id }, data: { password: hashed, refresh_token: null } });
+  await prisma.user.update({
+    where: { id: user.id },
+    // must_change_password тоза мешавад — ҳисоб акнун пурра кушода аст
+    data: { password: hashed, refresh_token: null, must_change_password: false },
+  });
   res.json({ success: true, message: "Парол иваз шуд. Бо парoли нав дубора ворид шавед." });
 };
 

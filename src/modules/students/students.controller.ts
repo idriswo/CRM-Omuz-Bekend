@@ -5,6 +5,8 @@ import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { toId, toInt } from "../../utils/input";
 import { normalizePhone, normalizePhoneList } from "../../utils/phone";
+import { generateTempPassword } from "../../utils/password";
+import { smsProvider, credentialsMessage } from "../../utils/smsProvider";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
   studentDto,
@@ -33,17 +35,16 @@ const MONTHS = [
 
 const SORTABLE = ["id", "first_name", "last_name", "created_at", "status"] as const;
 
-function generatePassword() {
-  return crypto.randomBytes(4).toString("hex"); // 8 аломат, масалан "a1b2c3d4"
-}
-
 // Сохтани login (User бо role=student) барои донишҷӯи нав, то ба система ворид шавад
-async function createStudentLogin(studentId: number, phone: string, full_name?: string) {
+async function createStudentLogin(studentId: number, rawPhone: string, full_name?: string) {
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return null;
+
   const studentRole = await prisma.role.findFirst({ where: { name: "student" } });
   const existingUser = await prisma.user.findUnique({ where: { phone } });
-  if (existingUser || !phone) return null;
+  if (existingUser) return null;
 
-  const plainPassword = generatePassword();
+  const plainPassword = generateTempPassword();
   const hashed = await bcrypt.hash(plainPassword, 10);
   await prisma.user.create({
     data: {
@@ -52,9 +53,22 @@ async function createStudentLogin(studentId: number, phone: string, full_name?: 
       full_name: full_name || phone,
       role_id: studentRole?.id,
       student_id: studentId,
+      // Парол бо SMS меравад — то ивази он донишҷӯ дастрасии маҳдуд дорад
+      must_change_password: true,
     },
   });
-  return { phone, password: plainPassword };
+
+  // Ноком шудани SMS набояд сохтани ҳисобро бекор кунад — credential
+  // дар ҷавоб низ бармегардад, то корманд онро дастӣ дода тавонад.
+  let sms_sent = false;
+  try {
+    await smsProvider.send(phone, credentialsMessage({ full_name, phone, password: plainPassword }));
+    sms_sent = true;
+  } catch (err) {
+    console.error(`[students] SMS ба ${phone} нарасид:`, err instanceof Error ? err.message : err);
+  }
+
+  return { phone, password: plainPassword, sms_sent };
 }
 
 /** Майдонҳои умумии body-и донишҷӯ (ҳам JSON, ҳам multipart). */

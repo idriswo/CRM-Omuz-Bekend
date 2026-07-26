@@ -5,13 +5,23 @@ import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/paginati
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
 import { normalizePhone } from "../../utils/phone";
+import { normalizeEmail } from "../../utils/email";
 import { generateTempPassword } from "../../utils/password";
-import { smsProvider, credentialsMessage } from "../../utils/smsProvider";
+import { sendEmail, credentialsEmail } from "../../utils/mailer";
 
-const SORTABLE = ["id", "phone", "full_name", "created_at"] as const;
+const SORTABLE = ["id", "email", "full_name", "created_at"] as const;
 
 const safeUser = (u: any) => {
-  const { password, refresh_token, ...rest } = u;
+  const {
+    password,
+    refresh_token,
+    reset_code,
+    reset_code_expires,
+    reset_code_attempts,
+    reset_token,
+    reset_token_expires,
+    ...rest
+  } = u;
   return rest;
 };
 
@@ -39,17 +49,21 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
 };
 
 export const createUser = async (req: AuthRequest, res: Response) => {
-  const { phone, password, full_name, role_id, branch_id } = req.body ?? {};
+  const { email, phone, password, full_name, role_id, branch_id } = req.body ?? {};
 
-  // phone логини вуруд аст — бинобар ин ҳамон шакли ягона нигоҳ дошта мешавад,
-  // ва login низ вурудро нормализа мекунад (auth.controller.ts)
-  const phoneValue = normalizePhone(phone);
-  if (!phoneValue) {
+  // email логини вуруд аст — бинобар ин ҳамон нормализатсияе мегузарад,
+  // ки login истифода мебарад (auth.controller.ts)
+  const emailValue = normalizeEmail(email);
+  if (!emailValue) {
     return res
       .status(400)
-      .json({ message: `Рақами телефон нодуруст аст: "${phone}". Намуна: 902223344` });
+      .json({ message: `Email нодуруст аст: "${email}". Намуна: salim@gmail.com` });
   }
-  // password ихтиёрӣ аст: агар наомада бошад, система худаш месозад ва бо SMS
+  // phone акнун ихтиёрӣ ва танҳо барои алоқа аст — вале агар омада бошад, бояд дуруст бошад
+  if (phone !== undefined && phone !== null && phone !== "" && !normalizePhone(phone)) {
+    return res.status(400).json({ message: `Рақами телефон нодуруст аст: "${phone}"` });
+  }
+  // password ихтиёрӣ аст: агар наомада бошад, система худаш месозад ва бо email
   // мефиристад. Ин роҳи асосист — парол дар чат/лог намемонад.
   if (password !== undefined && (typeof password !== "string" || password.length < 8)) {
     return res.status(400).json({ message: "Парол бояд на камтар аз 8 аломат бошад" });
@@ -69,41 +83,46 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
   const user = await prisma.user.create({
     data: {
-      phone: phoneValue,
+      email: emailValue,
+      phone: normalizePhone(phone),
       password: hashed,
       full_name,
       role_id: Number(role_id),
       branch_id: branch_id ? Number(branch_id) : undefined,
-      // Пароли сохташуда тавассути SMS меравад — то ивази он ҳисоб маҳдуд аст
+      // Пароли сохташуда тавассути email меравад — то ивази он ҳисоб маҳдуд аст
       must_change_password: generated,
     },
   });
 
-  // Ноком шудани SMS набояд сохтани ҳисобро бекор кунад — корбар аллакай
+  // Ноком шудани email набояд сохтани ҳисобро бекор кунад — корбар аллакай
   // сохта шуд ва credential дар ҷавоб бармегардад, то корманд онро дастӣ диҳад.
-  let sms_sent = false;
-  let sms_error: string | undefined;
+  let email_sent = false;
+  let email_error: string | undefined;
   try {
-    await smsProvider.send(phoneValue, credentialsMessage({ full_name, phone: phoneValue, password: plainPassword }));
-    sms_sent = true;
+    await sendEmail(credentialsEmail({ full_name, email: emailValue, password: plainPassword }));
+    email_sent = true;
   } catch (err) {
-    sms_error = err instanceof Error ? err.message : String(err);
-    console.error(`[users] SMS ба ${phoneValue} нарасид:`, sms_error);
+    email_error = err instanceof Error ? err.message : String(err);
+    console.error(`[users] email ба ${emailValue} нарасид:`, email_error);
   }
 
   res.status(201).json({
     ...safeUser(user),
-    sms_sent,
-    ...(sms_error ? { sms_error } : {}),
+    email_sent,
+    ...(email_error ? { email_error } : {}),
     // Парол танҳо ҳамин як бор нишон дода мешавад — дар база hash аст
-    login_credentials: { phone: phoneValue, password: plainPassword },
+    login_credentials: { email: emailValue, password: plainPassword },
   });
 };
 
 export const updateUser = async (req: AuthRequest, res: Response) => {
-  const { phone, full_name, role_id, branch_id } = req.body ?? {};
+  const { email, phone, full_name, role_id, branch_id } = req.body ?? {};
 
-  if (phone !== undefined && !normalizePhone(phone)) {
+  // email логин аст — иваз кардани он мумкин, вале бояд дуруст бошад
+  if (email !== undefined && !normalizeEmail(email)) {
+    return res.status(400).json({ message: `Email нодуруст аст: "${email}"` });
+  }
+  if (phone !== undefined && phone !== null && phone !== "" && !normalizePhone(phone)) {
     return res.status(400).json({ message: `Рақами телефон нодуруст аст: "${phone}"` });
   }
 
@@ -119,6 +138,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.update({
     where: { id: Number(req.params.id) },
     data: {
+      email: normalizeEmail(email),
       phone: normalizePhone(phone),
       full_name,
       role_id: role_id ? Number(role_id) : undefined,

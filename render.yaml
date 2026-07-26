@@ -18,10 +18,17 @@ services:
         value: 3h
       - key: REFRESH_TOKEN_TTL
         value: 7d
-      - key: SEED_DIRECTOR_PHONE
-        value: 900000000
+      - key: SEED_DIRECTOR_EMAIL
+        sync: false # дар Render дастӣ гузошта мешавад
       - key: SEED_DIRECTOR_PASSWORD
-        value: "Director@2026!"
+        sync: false # дастӣ — набояд дар repo бошад
+      # Gmail SMTP. Холӣ монад, барнома дар режими stub кор мекунад (email намеравад).
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: MAIL_FROM_NAME
+        value: Omuz CRM
       - key: PORT
         value: 4000
 

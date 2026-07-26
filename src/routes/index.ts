@@ -9,7 +9,7 @@ import timetableRoutes from "../modules/timetable/timetable.routes";
 import paymentsRoutes from "../modules/payments/payments.routes";
 import accountingRoutes from "../modules/accounting/accounting.routes";
 import administrationRoutes from "../modules/administration/administration.routes";
-import smsRoutes from "../modules/sms/sms.routes";
+import emailRoutes from "../modules/email/email.routes";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes";
 import notificationsRoutes from "../modules/notifications/notifications.routes";
 
@@ -24,7 +24,7 @@ router.use("/groups", groupsRoutes);
 router.use("/timetable", timetableRoutes);
 router.use("/payments", paymentsRoutes);
 router.use("/accounting", accountingRoutes);
-router.use("/sms", smsRoutes);
+router.use("/email", emailRoutes);
 router.use("/dashboard", dashboardRoutes);
 router.use("/notifications", notificationsRoutes);
 // Дар "/" насб мешавад, бинобар ин ҳатман охирин: миёнафзори authorize-и он

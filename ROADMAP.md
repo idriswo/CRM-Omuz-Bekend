@@ -16,6 +16,25 @@
 - [x] `src/middlewares/auth.middleware.ts` (JWT)
 - [x] `.env.example`, `.gitignore`
 
+## ⚠️ Гузариш ба Email (2026-07-27)
+
+Osonsms пулакӣ баромад — тамоми фиристодан ба **Gmail SMTP** гузашт ва **email логини вуруд шуд**.
+
+- `User.email` `@unique` — логин. `User.phone` ихтиёрӣ шуд (танҳо барои алоқа)
+- `POST /auth/login` акнун `{ email, password }` мегирад, на `phone`
+- `POST /auth/register` вуҷуд надорад (аз пештар)
+- Занҷири барқарорсозӣ **сеқадама** шуд:
+  1. `POST /auth/forgot-password` `{ email }` → коди 6-рақама ба email (10 дақиқа)
+  2. `POST /auth/verify-reset-code` `{ email, code }` → **`reset_token`** (15 дақиқа)
+  3. `POST /auth/reset-password` `{ reset_token, new_password }` — як бор истифодашаванда
+- Пас аз **5 кӯшиши нодуруст** код тамоман бекор мешавад
+- Модули `/api/sms/*` → **`/api/email/*`**; `SmsTemplate`/`SmsHistory` → `EmailTemplate`/`EmailHistory`
+- `recipient_type=Lead` бекор шуд — `Lead` дар schema email надорад
+- Credential-и ҳисоби нав ҳамчун **email-и HTML** меравад (`POST /users`, `POST /students/:id/invite`)
+- Агар `GMAIL_USER` холӣ бошад, барнома дар режими stub аст — паём ба лог меравад, лимити Gmail сарф намешавад
+- ⚠️ Gmail ~500 email/рӯз. Барои фиристодани оммавӣ дар оянда SendGrid/Resend/Mailgun лозим — танҳо `createTransport` дар `src/utils/mailer.ts` иваз мешавад
+- 📄 `Omuz-CRM-Backend-API-Guide.md` барои бахшҳои Auth ва SMS **кӯҳна шудааст** ва навсозӣ талаб мекунад
+
 ## Phase 1 — Auth (`/auth`)
 - [x] Prisma model `User` (+ `refresh_token` барои иваз кардани токен)
 - [x] ~~`POST /auth/register`~~ — нест карда шуд (2026-07-26): сабти кушода имкони сохтани ҳисобҳои беохир ва тафтиши рақамҳои телефонро медод. Ҳисоб танҳо аз `POST /users` ё `POST /students/:id/invite` сохта мешавад

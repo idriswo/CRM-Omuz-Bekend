@@ -47,29 +47,10 @@ function plan(table: string, id: number, field: string, raw: string | null) {
 async function main() {
   console.log(APPLY ? "=== РЕЖИМИ НАВИШТАН ===\n" : "=== РЕЖИМИ НИШОНДОД (--apply нест) ===\n");
 
-  // ---- User: phone логин ва @unique аст — бархӯрдҳо бояд пеш аз навиштан пайдо шаванд
+  // ---- User: phone акнун ихтиёрӣ аст ва @unique нест (логин email аст),
+  // бинобар ин бархӯрди рақамҳо дигар хатар надорад
   console.log("[User]");
   const users = await prisma.user.findMany({ select: { id: true, phone: true } });
-  const targets = new Map<string, number[]>();
-  for (const u of users) {
-    const norm = normalizePhone(u.phone);
-    if (!norm) {
-      problems.push({ table: "User", id: u.id, field: "phone", value: u.phone, reason: "нормализа намешавад — ин ЛОГИН аст" });
-      continue;
-    }
-    targets.set(norm, [...(targets.get(norm) ?? []), u.id]);
-  }
-  const collisions = [...targets.entries()].filter(([, ids]) => ids.length > 1);
-  if (collisions.length) {
-    console.log("\n  ⛔ БАРХӮРД: якчанд корбар пас аз нормализатсия як рақам мегиранд.");
-    for (const [phone, ids] of collisions) console.log(`     ${phone} <- User id: ${ids.join(", ")}`);
-    console.log("     phone дар User @unique аст — навиштан ноком мешавад.");
-    console.log("     Аввал инҳоро дастӣ ҳал кунед, баъд скриптро такрор кунед.\n");
-    if (APPLY) {
-      console.log("НАВИШТАН БЕКОР КАРДА ШУД.");
-      return;
-    }
-  }
   for (const u of users) {
     const norm = plan("User", u.id, "phone", u.phone);
     if (norm && APPLY) await prisma.user.update({ where: { id: u.id }, data: { phone: norm } });
@@ -128,7 +109,7 @@ async function main() {
     for (const p of problems) {
       console.log(`  ${p.table}#${p.id}.${p.field} = "${p.value}"  (${p.reason})`);
     }
-    console.log(`\nОнҳо бетағйир монданд — SMS ба ин рақамҳо намеравад.`);
+    console.log(`\nОнҳо бетағйир монданд ва шакли ягона надоранд.`);
   }
   if (!APPLY && (changed || problems.length)) {
     console.log(`\nБарои навиштан: npx ts-node prisma/normalize-phones.ts --apply`);

@@ -6,7 +6,8 @@ import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/paginati
 import { toId, toInt } from "../../utils/input";
 import { normalizePhone, normalizePhoneList } from "../../utils/phone";
 import { generateTempPassword } from "../../utils/password";
-import { smsProvider, credentialsMessage } from "../../utils/smsProvider";
+import { sendEmail, credentialsEmail } from "../../utils/mailer";
+import { normalizeEmail } from "../../utils/email";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
   studentDto,
@@ -35,40 +36,45 @@ const MONTHS = [
 
 const SORTABLE = ["id", "first_name", "last_name", "created_at", "status"] as const;
 
-// Сохтани login (User бо role=student) барои донишҷӯи нав, то ба система ворид шавад
-async function createStudentLogin(studentId: number, rawPhone: string, full_name?: string) {
-  const phone = normalizePhone(rawPhone);
-  if (!phone) return null;
+/**
+ * Сохтани login (User бо role=student) барои донишҷӯ.
+ * email логини вуруд аст — бинобар ин донишҷӯ бе email ҳисоб гирифта наметавонад.
+ * `reason` барои паёми фаҳмо ба клиент бармегардад.
+ */
+async function createStudentLogin(studentId: number, rawEmail: unknown, rawPhone: unknown, full_name?: string) {
+  const email = normalizeEmail(rawEmail);
+  if (!email) return { error: "no_email" as const };
+
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) return { error: "email_taken" as const };
 
   const studentRole = await prisma.role.findFirst({ where: { name: "student" } });
-  const existingUser = await prisma.user.findUnique({ where: { phone } });
-  if (existingUser) return null;
-
   const plainPassword = generateTempPassword();
   const hashed = await bcrypt.hash(plainPassword, 10);
   await prisma.user.create({
     data: {
-      phone,
+      email,
+      phone: normalizePhone(rawPhone),
       password: hashed,
-      full_name: full_name || phone,
+      full_name: full_name || email,
       role_id: studentRole?.id,
       student_id: studentId,
-      // Парол бо SMS меравад — то ивази он донишҷӯ дастрасии маҳдуд дорад
+      // Парол бо email меравад — то ивази он донишҷӯ дастрасии маҳдуд дорад
       must_change_password: true,
     },
   });
 
-  // Ноком шудани SMS набояд сохтани ҳисобро бекор кунад — credential
+  // Ноком шудани email набояд сохтани ҳисобро бекор кунад — credential
   // дар ҷавоб низ бармегардад, то корманд онро дастӣ дода тавонад.
-  let sms_sent = false;
+  let email_sent = false;
   try {
-    await smsProvider.send(phone, credentialsMessage({ full_name, phone, password: plainPassword }));
-    sms_sent = true;
+    await sendEmail(credentialsEmail({ full_name, email, password: plainPassword }));
+    email_sent = true;
   } catch (err) {
-    console.error(`[students] SMS ба ${phone} нарасид:`, err instanceof Error ? err.message : err);
+    console.error(`[students] email ба ${email} нарасид:`, err instanceof Error ? err.message : err);
   }
 
-  return { phone, password: plainPassword, sms_sent };
+  return { email, password: plainPassword, email_sent };
 }
 
 /** Майдонҳои умумии body-и донишҷӯ (ҳам JSON, ҳам multipart). */
@@ -91,7 +97,9 @@ function studentBody(req: Request) {
     birth_date: b.birth_date ? new Date(b.birth_date) : undefined,
     gender: b.gender,
     address: b.address,
-    email: b.email,
+    // email хурдҳарф сабт мешавад — он логини ҳисоби донишҷӯ мегардад
+    email: normalizeEmail(b.email),
+    email_raw: b.email,
     // Рақамҳо ҳамеша дар шакли 992XXXXXXXXX сабт мешаванд — то ба gateway
     // фиристодан мумкин бошад. phone_raw барои паёми хатогӣ нигоҳ дошта мешавад.
     phone: normalizePhone(b.phone),
@@ -169,6 +177,8 @@ export const createStudent = async (req: Request, res: Response) => {
     return res.status(400).json({
       message: `Рақами телефон нодуруст аст: "${b.phone_raw}". Намуна: 902223344 ё +992 90 222 33 44`,
     });
+  if (b.email_raw && !b.email)
+    return res.status(400).json({ message: `Email нодуруст аст: "${b.email_raw}"` });
 
   const student = await prisma.student.create({
     data: {
@@ -192,10 +202,13 @@ export const createStudent = async (req: Request, res: Response) => {
 
   // Account худкор сохта намешавад — сутуни ACCOUNT «No» мемонад ва
   // корманд онро бо тугмаи Invite (POST /students/:id/invite) месозад.
-  const credentials =
-    req.body?.create_account === true || req.body?.create_account === "true"
-      ? await createStudentLogin(student.id, b.phone, fullName(student))
-      : null;
+  const wantsAccount = req.body?.create_account === true || req.body?.create_account === "true";
+  const created_login = wantsAccount
+    ? await createStudentLogin(student.id, b.email, b.phone, fullName(student))
+    : null;
+  // Агар email набошад, ҳисоб сохта намешавад — вале худи донишҷӯ сохта мемонад.
+  // Корманд баъдтар email гузошта, тугмаи Invite-ро пахш мекунад.
+  const credentials = created_login && !("error" in created_login) ? created_login : null;
   const created = await prisma.student.findUnique({
     where: { id: student.id },
     include: studentInclude,
@@ -212,6 +225,8 @@ export const updateStudent = async (req: Request, res: Response) => {
     return res.status(400).json({
       message: `Рақами телефон нодуруст аст: "${b.phone_raw}". Намуна: 902223344 ё +992 90 222 33 44`,
     });
+  if (b.email_raw && !b.email)
+    return res.status(400).json({ message: `Email нодуруст аст: "${b.email_raw}"` });
 
   let left_at: Date | null | undefined = undefined;
   if (b.status === "inactive") {
@@ -274,10 +289,26 @@ export const inviteStudentAccount = async (req: Request, res: Response) => {
   if (!student) return res.status(404).json({ message: "Донишҷӯ ёфт нашуд" });
   if (student.user) return res.status(409).json({ message: "Ин донишҷӯ аллакай account дорад" });
 
-  if (email) await prisma.student.update({ where: { id }, data: { email } });
-  const credentials = await createStudentLogin(id, student.phone, fullName(student));
-  if (!credentials)
-    return res.status(409).json({ message: "Бо ин рақами телефон корбар аллакай мавҷуд аст" });
+  // email метавонад ҳамин ҷо дода шавад (агар дар профил набошад) —
+  // логин ва парол ба ҳамон суроға меравад
+  if (email !== undefined) {
+    const emailValue = normalizeEmail(email);
+    if (!emailValue) {
+      return res.status(400).json({ message: `Email нодуруст аст: "${email}"` });
+    }
+    await prisma.student.update({ where: { id }, data: { email: emailValue } });
+    student.email = emailValue;
+  }
+
+  const credentials = await createStudentLogin(id, student.email, student.phone, fullName(student));
+  if ("error" in credentials) {
+    if (credentials.error === "no_email") {
+      return res.status(400).json({
+        message: "Ин донишҷӯ email надорад. Email-ро дар профил гузоред ё дар ҳамин дархост фиристед.",
+      });
+    }
+    return res.status(409).json({ message: "Бо ин email корбар аллакай мавҷуд аст" });
+  }
 
   res.status(201).json({ success: true, login_credentials: credentials });
 };

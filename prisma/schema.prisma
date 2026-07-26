@@ -288,21 +288,26 @@ model Expense {
   date   DateTime
 }
 
-model SmsTemplate {
+model EmailTemplate {
   id          Int    @id @default(autoincrement())
   title       String
   description String
 }
 
-model SmsHistory {
-  id      Int      @id @default(autoincrement())
-  title   String
-  sent_at DateTime @default(now())
+model EmailHistory {
+  id            Int      @id @default(autoincrement())
+  title         String
+  recipients    Int      @default(0)
+  failed        Int      @default(0)
+  sent_at       DateTime @default(now())
 }
 
 model User {
   id                Int      @id @default(autoincrement())
-  phone             String   @unique
+  // email логини вуруд аст. Credential ва коди барқарорсозӣ ба ҳамин суроға мераванд.
+  email             String   @unique
+  // phone танҳо барои алоқа мемонад — дигар логин нест ва ихтиёрӣ аст
+  phone             String?
   password          String
   full_name         String
   role_id           Int?
@@ -313,12 +318,20 @@ model User {
   student           Student? @relation(fields: [student_id], references: [id])
   // Танҳо барои role=admin маъно дорад: superadmin/director метавонанд ин имконро хомӯш/фаъол кунанд
   can_add_students  Boolean  @default(true)
-  // true барои ҳисобҳое, ки паролашон аз тарафи система сохта ва бо SMS фиристода шудааст.
+  // true барои ҳисобҳое, ки паролашон аз тарафи система сохта ва бо email фиристода шудааст.
   // То иваз накардани парол корбар ба ягон бахши система дастрасӣ надорад.
   must_change_password Boolean @default(false)
   refresh_token     String?
+  // Коди 6-рақама bcrypt-hash карда мешавад — ҳатто дастрасӣ ба база
+  // имкони гирифтани коди фаъолро намедиҳад
   reset_code        String?
   reset_code_expires DateTime?
+  // Пас аз 5 кӯшиши нодуруст код бекор карда мешавад (пешгирии тахмини код)
+  reset_code_attempts Int      @default(0)
+  // Токени муваққатӣ, ки verify-reset-code медиҳад ва reset-password интизор аст.
+  // Низ hash карда мешавад ва танҳо як бор кор мекунад.
+  reset_token         String?
+  reset_token_expires DateTime?
   logs              Log[]
   notifications     Notification[]
   created_at        DateTime @default(now())

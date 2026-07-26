@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { toId, toInt } from "../../utils/input";
+import { normalizePhone, normalizePhoneList } from "../../utils/phone";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import {
   studentDto,
@@ -77,9 +78,12 @@ function studentBody(req: Request) {
     gender: b.gender,
     address: b.address,
     email: b.email,
-    phone: b.phone,
-    father_phone: b.father_phone ?? (Array.isArray(phones) ? phones[1]?.number : undefined),
-    phones: Array.isArray(phones) ? phones : undefined,
+    // Рақамҳо ҳамеша дар шакли 992XXXXXXXXX сабт мешаванд — то ба gateway
+    // фиристодан мумкин бошад. phone_raw барои паёми хатогӣ нигоҳ дошта мешавад.
+    phone: normalizePhone(b.phone),
+    phone_raw: b.phone,
+    father_phone: normalizePhone(b.father_phone ?? (Array.isArray(phones) ? phones[1]?.number : undefined)),
+    phones: normalizePhoneList(phones),
     telegram_username: b.telegram_username,
     description: b.description,
     is_top: b.is_top === undefined ? undefined : b.is_top === true || b.is_top === "true",
@@ -145,8 +149,12 @@ export const getStudentById = async (req: Request, res: Response) => {
 
 export const createStudent = async (req: Request, res: Response) => {
   const b = studentBody(req);
-  if (!b.first_name || !b.last_name || !b.phone)
+  if (!b.first_name || !b.last_name || !b.phone_raw)
     return res.status(400).json({ message: "first_name, last_name ва phone ҳатмист" });
+  if (!b.phone)
+    return res.status(400).json({
+      message: `Рақами телефон нодуруст аст: "${b.phone_raw}". Намуна: 902223344 ё +992 90 222 33 44`,
+    });
 
   const student = await prisma.student.create({
     data: {
@@ -184,6 +192,12 @@ export const createStudent = async (req: Request, res: Response) => {
 export const updateStudent = async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const b = studentBody(req);
+
+  // Агар phone омада бошад, вале нормализа нашуда — хатои клиент аст, на 500
+  if (b.phone_raw && !b.phone)
+    return res.status(400).json({
+      message: `Рақами телефон нодуруст аст: "${b.phone_raw}". Намуна: 902223344 ё +992 90 222 33 44`,
+    });
 
   let left_at: Date | null | undefined = undefined;
   if (b.status === "inactive") {

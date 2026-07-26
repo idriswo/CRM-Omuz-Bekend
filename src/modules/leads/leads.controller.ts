@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { toId, toInt } from "../../utils/input";
+import { normalizePhone } from "../../utils/phone";
 import { exportToXlsx } from "../../utils/export";
 
 const SORTABLE = ["id", "full_name", "phone", "type", "utm_source", "created_at"] as const;
@@ -39,18 +40,27 @@ export const createLead = async (req: Request, res: Response) => {
   if (!full_name || !phone) {
     return res.status(400).json({ message: "full_name ва phone ҳатмист" });
   }
+  const phoneValue = normalizePhone(phone);
+  if (!phoneValue) {
+    return res
+      .status(400)
+      .json({ message: `Рақами телефон нодуруст аст: "${phone}". Намуна: 902223344` });
+  }
   const lead = await prisma.lead.create({
     // course_id аз клиент ҳамчун сатр меояд ("3") — бе toId Prisma 500 медод
-    data: { full_name, phone, lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
+    data: { full_name, phone: phoneValue, lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
   });
   res.status(201).json(lead);
 };
 
 export const updateLead = async (req: Request, res: Response) => {
   const { full_name, phone, lesson_time, course_id, utm_source, occupation, notes } = req.body ?? {};
+  if (phone !== undefined && !normalizePhone(phone)) {
+    return res.status(400).json({ message: `Рақами телефон нодуруст аст: "${phone}"` });
+  }
   const lead = await prisma.lead.update({
     where: { id: Number(req.params.id) },
-    data: { full_name, phone, lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
+    data: { full_name, phone: normalizePhone(phone), lesson_time, course_id: toId(course_id), utm_source, occupation, notes },
   });
   res.json(lead);
 };

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { toId, toInt } from "../../utils/input";
+import { normalizePhone } from "../../utils/phone";
 
 const SORTABLE = ["id", "first_name", "last_name", "position", "experience", "phone", "created_at"] as const;
 
@@ -46,6 +47,12 @@ export const createEmployee = async (req: Request, res: Response) => {
   if (!first_name || !last_name || !position || !phone) {
     return res.status(400).json({ message: "first_name, last_name, position ва phone ҳатмист" });
   }
+  const phoneValue = normalizePhone(phone);
+  if (!phoneValue) {
+    return res
+      .status(400)
+      .json({ message: `Рақами телефон нодуруст аст: "${phone}". Намуна: 902223344` });
+  }
   const employee = await prisma.employee.create({
     data: {
       first_name,
@@ -54,7 +61,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       // experience ҳамчун сатр ("5") меомад ва Prisma-ро ба 500 мебурд
       experience: toInt(experience),
       branch_id: toId(branch_id),
-      phone,
+      phone: phoneValue,
       email,
     },
   });
@@ -63,6 +70,9 @@ export const createEmployee = async (req: Request, res: Response) => {
 
 export const updateEmployee = async (req: Request, res: Response) => {
   const { first_name, last_name, position, experience, branch_id, phone, email } = req.body ?? {};
+  if (phone !== undefined && !normalizePhone(phone)) {
+    return res.status(400).json({ message: `Рақами телефон нодуруст аст: "${phone}"` });
+  }
   const employee = await prisma.employee.update({
     where: { id: Number(req.params.id) },
     data: {
@@ -71,7 +81,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
       position,
       experience: toInt(experience),
       branch_id: toId(branch_id),
-      phone,
+      phone: normalizePhone(phone),
       email,
     },
   });

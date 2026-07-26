@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import { ROLES } from "../src/constants/roles";
+import { normalizePhone } from "../src/utils/phone";
 
 const prisma = new PrismaClient();
 
@@ -14,7 +15,9 @@ async function main() {
   console.log("Роли: student, admin, superadmin, director — тайёр шуданд.");
 
   // Бутстрап: аввалин director, то касе тавонад аз /users дигар корбаронро идора кунад
-  const DIRECTOR_PHONE = process.env.SEED_DIRECTOR_PHONE || "900000000";
+  // Ҳамон шакли ягона, ки ҳамаи controller-ҳо истифода мебарад — вагарна
+  // director бо рақами хом сабт шуда, login (ки нормализа мекунад) ӯро намеёфт
+  const DIRECTOR_PHONE = normalizePhone(process.env.SEED_DIRECTOR_PHONE || "900000000")!;
   const DIRECTOR_PASSWORD = process.env.SEED_DIRECTOR_PASSWORD || "Director@2026!";
 
   const existingDirector = await prisma.user.findUnique({ where: { phone: DIRECTOR_PHONE } });

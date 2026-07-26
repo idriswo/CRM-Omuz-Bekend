@@ -4,6 +4,7 @@ import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
+import { normalizePhone } from "../../utils/phone";
 
 const SORTABLE = ["id", "phone", "full_name", "created_at"] as const;
 
@@ -36,7 +37,20 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
 };
 
 export const createUser = async (req: AuthRequest, res: Response) => {
-  const { phone, password, full_name, role_id, branch_id } = req.body;
+  const { phone, password, full_name, role_id, branch_id } = req.body ?? {};
+
+  // phone логини вуруд аст — бинобар ин ҳамон шакли ягона нигоҳ дошта мешавад,
+  // ва login низ вурудро нормализа мекунад (auth.controller.ts)
+  const phoneValue = normalizePhone(phone);
+  if (!phoneValue) {
+    return res
+      .status(400)
+      .json({ message: `Рақами телефон нодуруст аст: "${phone}". Намуна: 902223344` });
+  }
+  if (typeof password !== "string" || password.length < 8) {
+    return res.status(400).json({ message: "Парол бояд на камтар аз 8 аломат бошад" });
+  }
+  if (!full_name) return res.status(400).json({ message: "full_name ҳатмист" });
 
   const targetRole = await prisma.role.findUnique({ where: { id: Number(role_id) } });
   const requesterRole = req.user!.role as RoleName;
@@ -47,13 +61,23 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
   const hashed = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
-    data: { phone, password: hashed, full_name, role_id: Number(role_id), branch_id: branch_id ? Number(branch_id) : undefined },
+    data: {
+      phone: phoneValue,
+      password: hashed,
+      full_name,
+      role_id: Number(role_id),
+      branch_id: branch_id ? Number(branch_id) : undefined,
+    },
   });
   res.status(201).json(safeUser(user));
 };
 
 export const updateUser = async (req: AuthRequest, res: Response) => {
-  const { phone, full_name, role_id, branch_id } = req.body;
+  const { phone, full_name, role_id, branch_id } = req.body ?? {};
+
+  if (phone !== undefined && !normalizePhone(phone)) {
+    return res.status(400).json({ message: `Рақами телефон нодуруст аст: "${phone}"` });
+  }
 
   if (role_id) {
     const targetRole = await prisma.role.findUnique({ where: { id: Number(role_id) } });
@@ -67,7 +91,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.update({
     where: { id: Number(req.params.id) },
     data: {
-      phone,
+      phone: normalizePhone(phone),
       full_name,
       role_id: role_id ? Number(role_id) : undefined,
       branch_id: branch_id ? Number(branch_id) : undefined,

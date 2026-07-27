@@ -31,9 +31,29 @@ Osonsms пулакӣ баромад — тамоми фиристодан ба *
 - Модули `/api/sms/*` → **`/api/email/*`**; `SmsTemplate`/`SmsHistory` → `EmailTemplate`/`EmailHistory`
 - `recipient_type=Lead` бекор шуд — `Lead` дар schema email надорад
 - Credential-и ҳисоби нав ҳамчун **email-и HTML** меравад (`POST /users`, `POST /students/:id/invite`)
-- Агар `GMAIL_USER` холӣ бошад, барнома дар режими stub аст — паём ба лог меравад, лимити Gmail сарф намешавад
-- ⚠️ Gmail ~500 email/рӯз. Барои фиристодани оммавӣ дар оянда SendGrid/Resend/Mailgun лозим — танҳо `createTransport` дар `src/utils/mailer.ts` иваз мешавад
+- Агар ҳеҷ провайдер танзим нашуда бошад, барнома дар режими stub аст — паём ба лог меравад
 - 📄 `Omuz-CRM-Backend-API-Guide.md` барои бахшҳои Auth ва SMS **кӯҳна шудааст** ва навсозӣ талаб мекунад
+
+## Gmail SMTP → Brevo (2026-07-27)
+
+Gmail локалӣ кор мекард, вале дар production ҳеҷ гоҳ не: **плани Free-и Render
+трафики бароварданиро дар портҳои 25/465/587 мебандад**, бинобар ин ҳар пайванди
+SMTP ноком мешуд. Хато дар `try/catch` фурӯ бурда мешуд (`email_sent: false`),
+барои ҳамин аз берун ҳеҷ чиз дида намешуд.
+
+- `src/utils/mailer.ts` акнун ду провайдер дорад — интихоб дар `mailProvider()`:
+  - **`brevo`** — HTTP API (порти 443), агар `BREVO_API_KEY` гузошта шуда бошад. Провайдери асосӣ
+  - **`gmail`** — SMTP, танҳо барои dev дар компютери худӣ
+  - **`stub`** — ҳеҷ калид нест, паём ба лог меравад
+- Brevo бартарӣ дорад — то дар production тасодуфан ба SMTP-и басташуда наафтем
+- `sendEmail()`, шаблонҳо ва ҳамаи controller-ҳо **бетағйир монданд** — танҳо қабати интиқол иваз шуд
+- `GET /health` акнун `{ status, mail: "brevo" | "gmail" | "stub" }` бармегардонад
+- ⚠️ `MAIL_FROM_EMAIL` бояд дар Brevo ҳамчун sender **тасдиқшуда** бошад
+  (Senders → Add a sender). Домени худӣ лозим нест — суроғаи оддии Gmail кифоя аст
+- ⚠️ Плани ройгони Brevo: 300 email/рӯз
+- Чаро Brevo, на Resend: Resend бе домени тасдиқшуда танҳо ба email-и худи
+  соҳиби ҳисоб мефиристад, яъне барои донишҷӯён домени харидашуда талаб мекард
+- Барои гузаштан ба провайдери дигар танҳо `sendViaBrevo()` иваз мешавад
 
 ## Нақши admin → mentor (2026-07-27)
 

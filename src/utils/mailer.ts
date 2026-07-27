@@ -1,24 +1,33 @@
 import nodemailer, { Transporter } from "nodemailer";
 
 /**
- * Фиристодани email тавассути Gmail SMTP.
+ * Фиристодани email. Ду провайдер дастгирӣ мешавад — кадомаш интихоб шудан
+ * аз .env вобаста аст (ниг. `mailProvider()`):
  *
- * Танзимот аз .env гирифта мешавад:
- *   GMAIL_USER         — суроғаи Gmail (масалан omuzcrm@gmail.com)
- *   GMAIL_APP_PASSWORD — App Password-и 16-аломата аз Google, НА пароли оддии ҳисоб
- *   MAIL_FROM_NAME     — номи фиристанда (ихтиёрӣ, пешфарз "Omuz CRM")
+ *   brevo — HTTP API, порти 443. Провайдери асосӣ барои production.
+ *     BREVO_API_KEY   — калид аз brevo.com → SMTP & API → API Keys (бо "xkeysib-" сар мешавад)
+ *     MAIL_FROM_EMAIL — суроғаи фиристанда. Бояд дар Brevo ҳамчун sender ТАСДИҚ шуда бошад
+ *                       (Senders → Add a sender → пайванди тасдиқ ба ҳамон почта меояд).
+ *                       Суроғаи оддии Gmail мешавад — домени худӣ лозим нест.
+ *     MAIL_FROM_NAME  — номи фиристанда (пешфарз "Omuz CRM")
  *
- * App Password гирифтан: Google Account → Security → 2-Step Verification (бояд фаъол
- * бошад) → App passwords. Пароли оддии Gmail барои SMTP кор намекунад.
+ *   gmail — SMTP, порти 587. Танҳо барои dev дар компютери худӣ.
+ *     GMAIL_USER         — суроғаи Gmail
+ *     GMAIL_APP_PASSWORD — App Password-и 16-аломата (Google Account → Security →
+ *                          2-Step Verification → App passwords). Пароли оддӣ кор намекунад.
  *
- * ⚠️ Маҳдудияти Gmail: ~500 email дар як рӯз. Барои фиристодани оммавӣ ба
- * садҳо донишҷӯ ин зуд тамом мешавад. Вақте лоиҳа калон шуд, ба SendGrid /
- * Resend / Mailgun гузаштан лозим — барои он танҳо `createTransport` дар
- * поён иваз мешавад, ҳамаи ҷойҳои дигар бетағйир мемонанд.
+ * ⚠️ Чаро Gmail дар Render кор намекунад: плани Free-и Render трафики
+ * бароварданиро дар портҳои 25/465/587 мебандад, бинобар ин ҳар пайванди SMTP
+ * дар production ноком мешавад — гарчанде локалӣ бе мушкил кор мекунад. Brevo
+ * тавассути HTTPS мефиристад, ки баста нест.
  *
- * Агар GMAIL_USER холӣ бошад, барнома дар режими stub кор мекунад: паёмҳо
- * танҳо ба лог мераванд. Ин барои dev ва тест лозим аст — вагарна ҳар
- * иҷрои тест лимити рӯзонаро сарф мекард.
+ * Чаро маҳз Brevo: ройгон 300 email/рӯз ва барои фиристодан ба ҳар кас домени
+ * худӣ лозим нест — тасдиқи як суроға кифоя аст. (Барои муқоиса: Resend бе
+ * домени тасдиқшуда танҳо ба email-и худи соҳиби ҳисоб мефиристад.)
+ *
+ * Агар ҳеҷ як провайдер танзим нашуда бошад, барнома дар режими stub кор
+ * мекунад: паёмҳо танҳо ба лог мераванд. Ин барои тест лозим аст — вагарна
+ * ҳар иҷрои тест лимити рӯзонаро сарф мекард.
  */
 
 /**
@@ -28,7 +37,19 @@ import nodemailer, { Transporter } from "nodemailer";
  */
 const appPassword = () => (process.env.GMAIL_APP_PASSWORD || "").replace(/\s/g, "");
 
-export const mailEnabled = () => Boolean(process.env.GMAIL_USER && appPassword());
+export type MailProvider = "brevo" | "gmail" | "stub";
+
+/**
+ * Brevo аввалин аст: агар ҳарду танзим шуда бошанд, ҳамон интихоб мешавад,
+ * то дар production тасодуфан ба SMTP-и басташуда наафтем.
+ */
+export function mailProvider(): MailProvider {
+  if (process.env.BREVO_API_KEY) return "brevo";
+  if (process.env.GMAIL_USER && appPassword()) return "gmail";
+  return "stub";
+}
+
+export const mailEnabled = () => mailProvider() !== "stub";
 
 let transporter: Transporter | null = null;
 
@@ -54,23 +75,64 @@ export interface MailMessage {
 }
 
 /**
- * Ҳангоми нарасидани паём хато мепартояд — даъваткунанда аз рӯи он
- * failed_count мешуморад ва фиристодани боқимондаро бекор намекунад.
+ * Танҳо ҳамин функсия ба API-и Brevo вобаста аст. Барои гузаштан ба
+ * провайдери дигар (Resend, SendGrid) ҳаминро иваз кардан кифоя аст.
  */
-export async function sendEmail({ to, subject, html, text }: MailMessage): Promise<void> {
-  if (!mailEnabled()) {
-    console.log(`[MAIL stub] -> ${to} | ${subject}\n${text ?? stripHtml(html)}`);
-    return;
-  }
+async function sendViaBrevo({ to, subject, html, text }: MailMessage): Promise<void> {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY as string,
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: {
+        name: process.env.MAIL_FROM_NAME || "Omuz CRM",
+        email: process.env.MAIL_FROM_EMAIL,
+      },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+    // Бе ин як дархости овезон сохтани корбарро дар frontend мунтазир мемонад
+    signal: AbortSignal.timeout(15_000),
+  });
 
+  if (!res.ok) {
+    // Матни хатои Brevo фаҳмо аст ("sender not valid", "unauthorized" ва ғ.) —
+    // онро тавре мегузорем, то дар email_error ба корманд расад
+    throw new Error(`Brevo ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  }
+}
+
+async function sendViaGmail({ to, subject, html, text }: MailMessage): Promise<void> {
   const fromName = process.env.MAIL_FROM_NAME || "Omuz CRM";
   await getTransporter().sendMail({
     from: `"${fromName}" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html,
-    text: text ?? stripHtml(html),
+    text,
   });
+}
+
+/**
+ * Ҳангоми нарасидани паём хато мепартояд — даъваткунанда аз рӯи он
+ * failed_count мешуморад ва фиристодани боқимондаро бекор намекунад.
+ */
+export async function sendEmail({ to, subject, html, text }: MailMessage): Promise<void> {
+  const message: MailMessage = { to, subject, html, text: text ?? stripHtml(html) };
+
+  switch (mailProvider()) {
+    case "brevo":
+      return sendViaBrevo(message);
+    case "gmail":
+      return sendViaGmail(message);
+    default:
+      console.log(`[MAIL stub] -> ${to} | ${subject}\n${message.text}`);
+  }
 }
 
 /** Варианти матнии содда аз HTML — барои `text` ва логи режими stub. */

@@ -26,10 +26,13 @@ services:
         sync: false # дар Render дастӣ гузошта мешавад
       - key: SEED_DIRECTOR_PASSWORD
         sync: false # дастӣ — набояд дар repo бошад
-      # Gmail SMTP. Холӣ монад, барнома дар режими stub кор мекунад (email намеравад).
-      - key: GMAIL_USER
-        sync: false
-      - key: GMAIL_APP_PASSWORD
+      # Email тавассути Brevo (HTTP API, порти 443). Gmail SMTP ин ҷо кор
+      # намекунад: плани Free-и Render портҳои 25/465/587-ро мебандад.
+      # Холӣ монад, барнома дар режими stub кор мекунад (email намеравад).
+      - key: BREVO_API_KEY
+        sync: false # дастӣ дар Render гузошта мешавад — набояд дар repo бошад
+      # Бояд дар Brevo ҳамчун sender тасдиқшуда бошад (домен лозим нест).
+      - key: MAIL_FROM_EMAIL
         sync: false
       - key: MAIL_FROM_NAME
         value: Omuz CRM

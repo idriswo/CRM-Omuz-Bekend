@@ -544,9 +544,22 @@ export const getEnrolledList = async (req: Request, res: Response) => {
 
 // ===== Self-service (role=student) — фақат маълумоти худашро мебинад =====
 
+/**
+ * Корбари нақши student метавонад ба профили Student пайваст НАБОШАД —
+ * масалан агар ӯро тавассути POST /users сохта бошанд, на бо
+ * POST /students/:id/invite. Он гоҳ student_id null аст ва
+ * `findUnique({ where: { id: null } })` Prisma-ро ба хато мебурд (500).
+ */
+const NO_PROFILE = {
+  message: "Ин ҳисоб ба профили донишҷӯ пайваст нест",
+};
+
 export const getMyProfile = async (req: AuthRequest, res: Response) => {
+  const studentId = req.user?.student_id;
+  if (!studentId) return res.status(404).json(NO_PROFILE);
+
   const student = await prisma.student.findUnique({
-    where: { id: req.user!.student_id },
+    where: { id: studentId },
     include: { ...studentInclude, graduate_info: true },
   });
   if (!student) return res.status(404).json({ message: "Профил ёфт нашуд" });
@@ -554,29 +567,38 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 };
 
 export const getMyGroups = async (req: AuthRequest, res: Response) => {
+  const studentId = req.user?.student_id;
+  if (!studentId) return res.status(404).json(NO_PROFILE);
+
   const student = await prisma.student.findUnique({
-    where: { id: req.user!.student_id },
+    where: { id: studentId },
     include: { groups: { include: { course: true } } },
   });
   res.json(student?.groups ?? []);
 };
 
 export const getMyGroupmates = async (req: AuthRequest, res: Response) => {
+  const studentId = req.user?.student_id;
+  if (!studentId) return res.status(404).json(NO_PROFILE);
+
   const student = await prisma.student.findUnique({
-    where: { id: req.user!.student_id },
+    where: { id: studentId },
     include: { groups: { include: { students: true } } },
   });
   const groupmates = (student?.groups ?? []).map((g) => ({
     group_id: g.id,
     group_name: g.name,
-    students: g.students.filter((s) => s.id !== req.user!.student_id),
+    students: g.students.filter((s) => s.id !== studentId),
   }));
   res.json(groupmates);
 };
 
 export const getMyScores = async (req: AuthRequest, res: Response) => {
+  const studentId = req.user?.student_id;
+  if (!studentId) return res.status(404).json(NO_PROFILE);
+
   const entries = await prisma.journalEntry.findMany({
-    where: { student_id: req.user!.student_id },
+    where: { student_id: studentId },
     include: { week: { include: { group: true } } },
     orderBy: { day_date: "desc" },
   });
@@ -584,8 +606,11 @@ export const getMyScores = async (req: AuthRequest, res: Response) => {
 };
 
 export const getMyCoins = async (req: AuthRequest, res: Response) => {
+  const studentId = req.user?.student_id;
+  if (!studentId) return res.status(404).json(NO_PROFILE);
+
   const student = await prisma.student.findUnique({
-    where: { id: req.user!.student_id },
+    where: { id: studentId },
     include: { coin_transactions: { orderBy: { created_at: "desc" } } },
   });
   if (!student) return res.status(404).json({ message: "Профил ёфт нашуд" });

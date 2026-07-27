@@ -1,8 +1,21 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope } from "../../utils/pagination";
+import { AuthRequest } from "../../middlewares/auth.middleware";
+import { ROLES } from "../../constants/roles";
 
-export const getOverview = async (_req: Request, res: Response) => {
+/**
+ * Ойлик танҳо ба director дахл дорад. overview/net/chart ҷамъи ойлик ва
+ * авансро дар бар мегиранд, бинобар ин барои superadmin он майдонҳо аз
+ * ҷавоб бароварда мешаванд — вагарна манъи `/accounting/salary` маънӣ надошт,
+ * чун ҳамон рақамро аз ин ҷо гирифтан мумкин буд.
+ *
+ * `net` низ бароварда мешавад: он аз ойлик ҳисоб мешавад ва аз рӯи он
+ * ҷамъи ойликро баровардан мумкин аст.
+ */
+const seesSalary = (req: AuthRequest) => req.user?.role === ROLES.DIRECTOR;
+
+export const getOverview = async (req: AuthRequest, res: Response) => {
   const [income, expenses, salaries, avans, budgets, debtors] = await Promise.all([
     prisma.payment.aggregate({ _sum: { paid: true } }),
     prisma.expense.aggregate({ _sum: { amount: true } }),
@@ -20,17 +33,21 @@ export const getOverview = async (_req: Request, res: Response) => {
   res.json({
     total_income,
     total_expenses,
-    total_salaries,
-    total_avans,
     budget_allocated: budgets._sum.amount_allocated ?? 0,
     budget_spent: budgets._sum.amount_spent ?? 0,
     total_debt: debtors._sum.total_debt_amount ?? 0,
     total_debt_paid: debtors._sum.total_paid_amount ?? 0,
-    net: total_income - total_expenses - total_salaries - total_avans,
+    ...(seesSalary(req)
+      ? {
+          total_salaries,
+          total_avans,
+          net: total_income - total_expenses - total_salaries - total_avans,
+        }
+      : {}),
   });
 };
 
-export const getOverviewChart = async (req: Request, res: Response) => {
+export const getOverviewChart = async (req: AuthRequest, res: Response) => {
   const year = Number(req.query.year) || new Date().getFullYear();
   const start = new Date(`${year}-01-01T00:00:00.000Z`);
   const end = new Date(`${year + 1}-01-01T00:00:00.000Z`);
@@ -52,8 +69,19 @@ export const getOverviewChart = async (req: Request, res: Response) => {
   };
   bump(payments, "income", "paid");
   bump(expenses, "expenses", "amount");
-  bump(salaries, "salaries", "amount");
-  bump(avans, "avans", "amount");
+  if (seesSalary(req)) {
+    bump(salaries, "salaries", "amount");
+    bump(avans, "avans", "amount");
+  }
+
+  // Барои superadmin сутунҳои ойлик/аванс тамоман бароварда мешаванд,
+  // на танҳо сифр — вагарна набудани маълумот аз сифр фарқ намекард
+  if (!seesSalary(req)) {
+    for (const month of Object.keys(result)) {
+      const { salaries: _s, avans: _a, ...rest } = result[Number(month)];
+      result[Number(month)] = rest as any;
+    }
+  }
 
   res.json(result);
 };

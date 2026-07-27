@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
-import { ROLES } from "../../constants/roles";
+import { FINANCE_ROLES, SALARY_ROLES } from "../../constants/roles";
 import { getBudgets, createBudget, updateBudget, deleteBudget, getBudgetChart } from "./budget.controller";
 import { getSalaries, createSalary, updateSalary, deleteSalary } from "./salary.controller";
 import { getAvans, createAvans, updateAvans, deleteAvans } from "./avans.controller";
@@ -12,8 +12,10 @@ import { getAccountantSummary, getAccountantChart } from "./accountant.controlle
 import { getNet } from "./net.controller";
 
 const router = Router();
-// Финанс/ойлик — фақат director (admin ва superadmin дастрасӣ надоранд)
-router.use(authorize(ROLES.DIRECTOR));
+// Молия: superadmin низ мебинад (буҷа, хароҷот, қарздорон, хулосаи умумӣ).
+// Ойлик ва аванс — танҳо director. Дар overview/net майдонҳои ойлик барои
+// superadmin аз ҷавоб бароварда мешаванд (ниг. overview/net controller).
+router.use(authorize(...FINANCE_ROLES));
 
 /**
  * @openapi
@@ -56,7 +58,7 @@ router.get("/overview/students-payment", getStudentsPaymentOverview);
  *     security: [{ bearerAuth: [] }]
  *     responses: { 200: { description: OK } }
  */
-router.get("/accountant", getAccountantSummary);
+router.get("/accountant", authorize(...SALARY_ROLES), getAccountantSummary);
 /**
  * @openapi
  * /accounting/accountant/chart:
@@ -67,7 +69,7 @@ router.get("/accountant", getAccountantSummary);
  *     parameters: [{ in: query, name: year, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.get("/accountant/chart", getAccountantChart);
+router.get("/accountant/chart", authorize(...SALARY_ROLES), getAccountantChart);
 
 /**
  * @openapi
@@ -145,8 +147,8 @@ router.delete("/budget/:id", logAction("Budget", "delete"), deleteBudget);
  *     security: [{ bearerAuth: [] }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.get("/salary", getSalaries);
-router.post("/salary", logAction("Salary", "create"), createSalary);
+router.get("/salary", authorize(...SALARY_ROLES), getSalaries);
+router.post("/salary", authorize(...SALARY_ROLES), logAction("Salary", "create"), createSalary);
 
 /**
  * @openapi
@@ -164,8 +166,8 @@ router.post("/salary", logAction("Salary", "create"), createSalary);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.put("/salary/:id", logAction("Salary", "update"), updateSalary);
-router.delete("/salary/:id", logAction("Salary", "delete"), deleteSalary);
+router.put("/salary/:id", authorize(...SALARY_ROLES), logAction("Salary", "update"), updateSalary);
+router.delete("/salary/:id", authorize(...SALARY_ROLES), logAction("Salary", "delete"), deleteSalary);
 
 /**
  * @openapi
@@ -181,8 +183,8 @@ router.delete("/salary/:id", logAction("Salary", "delete"), deleteSalary);
  *     security: [{ bearerAuth: [] }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.get("/avans", getAvans);
-router.post("/avans", logAction("Avans", "create"), createAvans);
+router.get("/avans", authorize(...SALARY_ROLES), getAvans);
+router.post("/avans", authorize(...SALARY_ROLES), logAction("Avans", "create"), createAvans);
 
 /**
  * @openapi
@@ -200,8 +202,8 @@ router.post("/avans", logAction("Avans", "create"), createAvans);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.put("/avans/:id", logAction("Avans", "update"), updateAvans);
-router.delete("/avans/:id", logAction("Avans", "delete"), deleteAvans);
+router.put("/avans/:id", authorize(...SALARY_ROLES), logAction("Avans", "update"), updateAvans);
+router.delete("/avans/:id", authorize(...SALARY_ROLES), logAction("Avans", "delete"), deleteAvans);
 
 /**
  * @openapi

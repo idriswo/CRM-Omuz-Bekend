@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { prisma } from "../../utils/prisma";
+import { AuthRequest } from "../../middlewares/auth.middleware";
+import { ROLES } from "../../constants/roles";
 
 // Net = даромад - (хароҷот + маош + аванс)
-export const getNet = async (req: Request, res: Response) => {
+// Барои superadmin майдонҳои ойлик ва худи net бароварда мешаванд —
+// онҳо ойликро ошкор мекунанд (ниг. эзоҳ дар overview.controller.ts)
+export const getNet = async (req: AuthRequest, res: Response) => {
   const year = req.query.year ? Number(req.query.year) : undefined;
   const month = req.query.month ? String(req.query.month) : undefined;
 
@@ -30,6 +34,10 @@ export const getNet = async (req: Request, res: Response) => {
   const total_expenses = expenses._sum.amount ?? 0;
   const total_salaries = salaries._sum.amount ?? 0;
   const total_avans = avans._sum.amount ?? 0;
+
+  if (req.user?.role !== ROLES.DIRECTOR) {
+    return res.json({ total_income, total_expenses });
+  }
 
   res.json({
     total_income,

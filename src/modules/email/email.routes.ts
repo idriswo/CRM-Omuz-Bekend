@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
-import { ROLES } from "../../constants/roles";
+import { MANAGEMENT_ROLES } from "../../constants/roles";
 import {
   getEmailTemplates,
   createEmailTemplate,
@@ -16,7 +16,7 @@ import {
 } from "./email.controller";
 
 const router = Router();
-router.use(authorize(ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR));
+router.use(authorize(...MANAGEMENT_ROLES));
 
 /**
  * @openapi

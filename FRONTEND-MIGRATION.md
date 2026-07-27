@@ -27,20 +27,46 @@ const roles = await api.get("/api/roles");
 const mentorRoleId = roles.find(r => r.name === "mentor").id;
 ```
 
-Ҳудуди дастрасӣ (санҷидашуда):
+Ҳудуди дастрасӣ (ҳамааш бо 182 санҷиш тасдиқ шудааст):
 
 | Бахш | director | superadmin | mentor | student |
 |---|---|---|---|---|
-| Branches, Courses, Leads, Students, Employees, Groups, Timetable | ✅ | ✅ | ✅ | ❌ |
-| Dashboard, Email | ✅ | ✅ | ✅ | ❌ |
+| Branches, Courses, Leads, Employees, Timetable | ✅ | ✅ | ❌ | ❌ |
+| Dashboard, Email | ✅ | ✅ | ❌ | ❌ |
 | Users, Roles, Permissions, Logs | ✅ | ✅ | ❌ | ❌ |
-| Payments, Accounting | ✅ | ❌ | ❌ | ❌ |
+| **Гурӯҳҳо — дидан** (list, :id, stats, schedule) | ✅ | ✅ | ✅ | ✅ |
+| **Журнал** (ҳасту нест, балл) | ✅ | ✅ | ✅ | ❌ |
+| Гурӯҳ — сохтан/тағйир/нест | ✅ | ✅ | ❌ | ❌ |
+| **Донишҷӯ — дидан** (list, :id, activity, leaders) | ✅ | ✅ | ✅ | ❌ |
+| Донишҷӯ — сохтан/тағйир/нест/enroll/invite | ✅ | ✅ | ❌ | ❌ |
+| **Coin** (додан/харҷ/дидан) | ✅ | ✅ | ✅ | ❌ |
+| Payments, Budget, Expenses, Debtors, Overview | ✅ | ✅ | ❌ | ❌ |
+| **Ойлик** (salary, avans, accountant) | ✅ | ❌ | ❌ | ❌ |
 | Notifications | ✅ | ✅ | ✅ | ✅ |
-| `/students/me*` (профили худӣ) | ❌ | ❌ | ❌ | ✅ |
+| `/students/me*` (профил/балл/coin-и худӣ) | ❌ | ❌ | ❌ | ✅ |
 
-**Director ҳама ҷо дастрасӣ дорад** ва метавонад `superadmin`, `mentor`, `student` созад ва нест кунад. `superadmin` танҳо `mentor` ва `student` сохта метавонад.
+**mentor = муаллим.** Танҳо гурӯҳ/донишҷӯро мебинад, журнал менависад (ҳасту нест, балл)
+ва coin медиҳад. Донишҷӯ илова карда наметавонад.
+
+**student** ҳамаи гурӯҳҳоро мебинад, вале журнали онҳоро не — танҳо баллҳои
+худашро аз `/students/me/scores`.
+
+### ⚠️ Ойлик дар ҷавоб пинҳон мешавад
+
+`/accounting/overview`, `/accounting/net` ва `/accounting/overview/chart` барои
+**superadmin** майдонҳои ойликро БАР НАМЕГАРДОНАНД:
+
+| Майдон | director | superadmin |
+|---|---|---|
+| `total_income`, `total_expenses`, `budget_*`, `total_debt*` | ✅ | ✅ |
+| `total_salaries`, `total_avans`, `net` | ✅ | ❌ нест |
+| chart: `salaries`, `avans` | ✅ | ❌ нест |
+
+Пас дар UI ин майдонҳоро **шартан** нишон дод — `if (data.total_salaries !== undefined)`.
+Вагарна барои superadmin `undefined` намоён мешавад.
 
 `PUT /users/:id/toggle-add-students` танҳо барои нақши `mentor` кор мекунад — барои дигарон `400`.
+⚠️ Аммо mentor акнун донишҷӯ илова карда наметавонад, пас ин танзим амалан таъсир надорад.
 
 ## Он чи бояд НЕСТ карда шавад
 

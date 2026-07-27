@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
-import { ROLES } from "../../constants/roles";
+import { MANAGEMENT_ROLES } from "../../constants/roles";
 import {
   getEmployees,
   getEmployeeById,
@@ -13,7 +13,7 @@ import {
 } from "./employees.controller";
 
 const router = Router();
-router.use(authorize(ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR));
+router.use(authorize(...MANAGEMENT_ROLES));
 
 /**
  * @openapi

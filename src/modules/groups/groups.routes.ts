@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
-import { ROLES } from "../../constants/roles";
+import { GROUP_READ_ROLES, MANAGEMENT_ROLES, TEACHING_ROLES } from "../../constants/roles";
 import {
   getGroups,
   getGroupById,
@@ -25,7 +25,10 @@ import {
 } from "./groups.controller";
 
 const router = Router();
-router.use(authorize(ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR));
+// Дарвозаи умумӣ нест — ҳудуди ҳар нақш дар ин модул фарқ мекунад:
+//   дидан (list/:id)  — ҳама, аз ҷумла student
+//   журнал            — mentor низ менависад (ҳасту нест, балл)
+//   сохтан/тағйир/нест — танҳо superadmin/director
 
 /**
  * @openapi
@@ -36,7 +39,7 @@ router.use(authorize(ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR));
  *     security: [{ bearerAuth: [] }]
  *     responses: { 200: { description: OK } }
  */
-router.get("/stats", getGroupsStats);
+router.get("/stats", authorize(...GROUP_READ_ROLES), getGroupsStats);
 
 /**
  * @openapi
@@ -48,7 +51,7 @@ router.get("/stats", getGroupsStats);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.get("/:id/journal", getGroupJournal);
+router.get("/:id/journal", authorize(...TEACHING_ROLES), getGroupJournal);
 
 /**
  * @openapi
@@ -60,7 +63,7 @@ router.get("/:id/journal", getGroupJournal);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.post("/:id/journal/week", logAction("JournalWeek", "create"), addJournalWeek);
+router.post("/:id/journal/week", authorize(...TEACHING_ROLES), logAction("JournalWeek", "create"), addJournalWeek);
 
 /**
  * @openapi
@@ -75,7 +78,7 @@ router.post("/:id/journal/week", logAction("JournalWeek", "create"), addJournalW
  *       - { in: path, name: studentId, required: true, schema: { type: integer } }
  *     responses: { 200: { description: OK } }
  */
-router.put("/:id/journal/:weekId/students/:studentId", logAction("JournalEntry", "upsert"), upsertJournalEntry);
+router.put("/:id/journal/:weekId/students/:studentId", authorize(...TEACHING_ROLES), logAction("JournalEntry", "upsert"), upsertJournalEntry);
 
 /**
  * @openapi
@@ -101,7 +104,7 @@ router.put("/:id/journal/:weekId/students/:studentId", logAction("JournalEntry",
  *       content: { application/json: { schema: { type: object, properties: { sheet_url: { type: string } } } } }
  *     responses: { 200: { description: OK } }
  */
-router.put("/:id/journal/sheet", logAction("Group", "set-sheet"), setJournalSheet);
+router.put("/:id/journal/sheet", authorize(...MANAGEMENT_ROLES), logAction("Group", "set-sheet"), setJournalSheet);
 
 /**
  * @openapi
@@ -113,9 +116,9 @@ router.put("/:id/journal/sheet", logAction("Group", "set-sheet"), setJournalShee
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.post("/:id/journal/sync", logAction("Group", "sync-sheet"), syncJournalSheet);
+router.post("/:id/journal/sync", authorize(...MANAGEMENT_ROLES), logAction("Group", "sync-sheet"), syncJournalSheet);
 
-router.post("/:id/journal/:weekId/date", logAction("JournalWeek", "add-date"), addJournalDate);
+router.post("/:id/journal/:weekId/date", authorize(...TEACHING_ROLES), logAction("JournalWeek", "add-date"), addJournalDate);
 
 /**
  * @openapi
@@ -131,8 +134,8 @@ router.post("/:id/journal/:weekId/date", logAction("JournalWeek", "add-date"), a
  *     security: [{ bearerAuth: [] }]
  *     responses: { 200: { description: OK } }
  */
-router.put("/:id/journal/:weekId/date/:index", logAction("JournalWeek", "update-date"), updateJournalDate);
-router.delete("/:id/journal/:weekId/date/:index", logAction("JournalWeek", "delete-date"), deleteJournalDate);
+router.put("/:id/journal/:weekId/date/:index", authorize(...TEACHING_ROLES), logAction("JournalWeek", "update-date"), updateJournalDate);
+router.delete("/:id/journal/:weekId/date/:index", authorize(...TEACHING_ROLES), logAction("JournalWeek", "delete-date"), deleteJournalDate);
 
 /**
  * @openapi
@@ -143,7 +146,7 @@ router.delete("/:id/journal/:weekId/date/:index", logAction("JournalWeek", "dele
  *     security: [{ bearerAuth: [] }]
  *     responses: { 200: { description: OK } }
  */
-router.delete("/:id/journal/:weekId", logAction("JournalWeek", "delete"), deleteJournalWeek);
+router.delete("/:id/journal/:weekId", authorize(...TEACHING_ROLES), logAction("JournalWeek", "delete"), deleteJournalWeek);
 
 /**
  * @openapi
@@ -161,8 +164,8 @@ router.delete("/:id/journal/:weekId", logAction("JournalWeek", "delete"), delete
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.get("/:id/schedule", getGroupSchedule);
-router.post("/:id/schedule", logAction("TimetableEntry", "create"), createGroupScheduleEntry);
+router.get("/:id/schedule", authorize(...GROUP_READ_ROLES), getGroupSchedule);
+router.post("/:id/schedule", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "create"), createGroupScheduleEntry);
 
 /**
  * @openapi
@@ -184,8 +187,8 @@ router.post("/:id/schedule", logAction("TimetableEntry", "create"), createGroupS
  *       - { in: path, name: entryId, required: true, schema: { type: integer } }
  *     responses: { 200: { description: OK } }
  */
-router.put("/:id/schedule/:entryId", logAction("TimetableEntry", "update"), updateGroupScheduleEntry);
-router.delete("/:id/schedule/:entryId", logAction("TimetableEntry", "delete"), deleteGroupScheduleEntry);
+router.put("/:id/schedule/:entryId", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "update"), updateGroupScheduleEntry);
+router.delete("/:id/schedule/:entryId", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "delete"), deleteGroupScheduleEntry);
 
 /**
  * @openapi
@@ -201,8 +204,8 @@ router.delete("/:id/schedule/:entryId", logAction("TimetableEntry", "delete"), d
  *     security: [{ bearerAuth: [] }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.get("/", getGroups);
-router.post("/", logAction("Group", "create"), createGroup);
+router.get("/", authorize(...GROUP_READ_ROLES), getGroups);
+router.post("/", authorize(...MANAGEMENT_ROLES), logAction("Group", "create"), createGroup);
 
 /**
  * @openapi
@@ -226,8 +229,8 @@ router.post("/", logAction("Group", "create"), createGroup);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.get("/:id", getGroupById);
-router.put("/:id", logAction("Group", "update"), updateGroup);
-router.delete("/:id", logAction("Group", "delete"), deleteGroup);
+router.get("/:id", authorize(...GROUP_READ_ROLES), getGroupById);
+router.put("/:id", authorize(...MANAGEMENT_ROLES), logAction("Group", "update"), updateGroup);
+router.delete("/:id", authorize(...MANAGEMENT_ROLES), logAction("Group", "delete"), deleteGroup);
 
 export default router;

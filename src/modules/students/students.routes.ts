@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { upload } from "../../middlewares/upload.middleware";
 import { logAction } from "../../middlewares/log.middleware";
-import { authorize, selfStudentOr, requireCanAddStudents } from "../../middlewares/rbac.middleware";
-import { ROLES } from "../../constants/roles";
+import { authorize, selfStudentOr } from "../../middlewares/rbac.middleware";
+import { ROLES, TEACHING_ROLES, STUDENT_WRITE_ROLES } from "../../constants/roles";
 import {
   getStudents,
   getStudentById,
@@ -35,7 +35,10 @@ import {
 } from "./students.controller";
 
 const router = Router();
-const STAFF = [ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR] as const;
+// STAFF = дидан ва кор бо балл/coin — mentor низ дохил аст.
+// WRITE = сохтан/тағйир/нест кардани худи донишҷӯ — mentor иҷозат надорад.
+const STAFF = TEACHING_ROLES;
+const WRITE = STUDENT_WRITE_ROLES;
 
 /**
  * @openapi
@@ -73,7 +76,7 @@ router.get("/graduates/stats", authorize(...STAFF), getGraduatesStats);
  */
 router.get("/graduates/groups", authorize(...STAFF), getGraduateGroups);
 router.get("/graduates", authorize(...STAFF), getGraduates);
-router.put("/graduates/:id", authorize(...STAFF), logAction("Student", "update-graduate"), updateGraduate);
+router.put("/graduates/:id", authorize(...WRITE), logAction("Student", "update-graduate"), updateGraduate);
 /**
  * @openapi
  * /students/graduates/{id}:
@@ -122,7 +125,7 @@ router.get("/left-courses", authorize(...STAFF), getLeftCoursesList);
  */
 router.get("/activity", authorize(...STAFF), getStudentActivity);
 
-router.post("/enroll", authorize(...STAFF), logAction("Student", "enroll"), enrollStudent);
+router.post("/enroll", authorize(...WRITE), logAction("Student", "enroll"), enrollStudent);
 /**
  * @openapi
  * /students/enroll:
@@ -170,7 +173,7 @@ router.get("/enroll/chart", authorize(...STAFF), getEnrollChart);
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 201: { description: Сохта шуд } }
  */
-router.post("/:id/invite", authorize(...STAFF), logAction("Student", "invite"), inviteStudentAccount);
+router.post("/:id/invite", authorize(...WRITE), logAction("Student", "invite"), inviteStudentAccount);
 
 router.get("/:id/coins", selfStudentOr(...STAFF), getStudentCoins);
 router.post("/:id/coins", authorize(...STAFF), logAction("Coin", "add"), addCoins);
@@ -194,7 +197,7 @@ router.post("/:id/coins/spend", authorize(...STAFF), logAction("Coin", "spend"),
  */
 router.get("/", authorize(...STAFF), getStudents);
 router.get("/:id", selfStudentOr(...STAFF), getStudentById);
-router.post("/", authorize(...STAFF), requireCanAddStudents, upload.single("photo"), logAction("Student", "create"), createStudent);
+router.post("/", authorize(...WRITE), upload.single("photo"), logAction("Student", "create"), createStudent);
 
 /**
  * @openapi
@@ -212,7 +215,7 @@ router.post("/", authorize(...STAFF), requireCanAddStudents, upload.single("phot
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }
  */
-router.put("/:id", authorize(...STAFF), upload.single("photo"), logAction("Student", "update"), updateStudent);
-router.delete("/:id", authorize(...STAFF), logAction("Student", "delete"), deleteStudent);
+router.put("/:id", authorize(...WRITE), upload.single("photo"), logAction("Student", "update"), updateStudent);
+router.delete("/:id", authorize(...WRITE), logAction("Student", "delete"), deleteStudent);
 
 export default router;

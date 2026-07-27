@@ -45,6 +45,31 @@ Osonsms пулакӣ баромад — тамоми фиристодан ба *
 - ⚠️ Нақши `mentor` бо `Employee.position = "Mentor"` ва модели `MentorLevel`
   алоқаманд НЕСТ — онҳо маълумоти кадрӣ мебошанд, на ҳуқуқи дастрасӣ
 
+## Ҳудуди дастрасии нав (2026-07-27)
+
+Пас аз ивази номи `admin` → `mentor` ҳудуди ҳар нақш аз нав муайян шуд:
+
+- **director** — ҳама ҷо, аз ҷумла ойлик
+- **superadmin** — ҳама ҷо ба ҷуз ойлик (`salary`, `avans`, `accountant`).
+  Дар `overview`/`net`/`overview/chart` майдонҳои `total_salaries`, `total_avans`,
+  `net`, `salaries`, `avans` аз ҷавоб бароварда мешаванд — вагарна манъи
+  `/accounting/salary` маънӣ надошт
+- **mentor** (муаллим) — дидани гурӯҳ/донишҷӯ, журнал (ҳасту нест, балл), coin.
+  Донишҷӯ илова карда наметавонад. Ба branches/courses/leads/employees/
+  timetable/dashboard/email/payments дастрасӣ надорад
+- **student** — ҳамаи гурӯҳҳоро мебинад + профил/балл/coin-и худаш
+
+Гурӯҳҳои нақш дар `src/constants/roles.ts` ҷамъ карда шуданд
+(`MANAGEMENT_ROLES`, `FINANCE_ROLES`, `SALARY_ROLES`, `TEACHING_ROLES`,
+`STUDENT_WRITE_ROLES`, `GROUP_READ_ROLES`) — то ҳудуд дар як ҷо дида шавад.
+
+- `requireCanAddStudents` аз `POST /students` бароварда шуд — mentor акнун
+  умуман донишҷӯ илова карда наметавонад, пас он миёнафзор маънӣ надошт.
+  ⚠️ `User.can_add_students` ва `PUT /users/:id/toggle-add-students` мемонанд,
+  вале амалан таъсир надоранд — қарори нест кардани онҳо боқӣ мондааст
+- 🐛 `/students/me*` барои корбари нақши student, ки ба профили Student пайваст
+  нест (`student_id: null`), 500 медод — акнун 404
+
 ## Phase 1 — Auth (`/auth`)
 - [x] Prisma model `User` (+ `refresh_token` барои иваз кардани токен)
 - [x] ~~`POST /auth/register`~~ — нест карда шуд (2026-07-26): сабти кушода имкони сохтани ҳисобҳои беохир ва тафтиши рақамҳои телефонро медод. Ҳисоб танҳо аз `POST /users` ё `POST /students/:id/invite` сохта мешавад

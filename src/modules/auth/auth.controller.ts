@@ -30,6 +30,8 @@ async function buildAccessToken(userId: number) {
       id: user!.id,
       role: user!.role?.name,
       student_id: user!.student_id,
+      // барои mentor: ҷадвали дарсҳо аз рӯи ҳамин филтр мешавад
+      employee_id: user!.employee_id,
       must_change_password: user!.must_change_password,
     },
     process.env.JWT_SECRET!,
@@ -60,6 +62,7 @@ export const login = async (req: Request, res: Response) => {
       id: user.id,
       role: user.role?.name,
       student_id: user.student_id,
+      employee_id: user.employee_id,
       must_change_password: user.must_change_password,
     },
     process.env.JWT_SECRET!,

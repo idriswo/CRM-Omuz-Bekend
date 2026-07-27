@@ -63,10 +63,12 @@ Osonsms пулакӣ баромад — тамоми фиристодан ба *
 (`MANAGEMENT_ROLES`, `FINANCE_ROLES`, `SALARY_ROLES`, `TEACHING_ROLES`,
 `STUDENT_WRITE_ROLES`, `GROUP_READ_ROLES`) — то ҳудуд дар як ҷо дида шавад.
 
-- `requireCanAddStudents` аз `POST /students` бароварда шуд — mentor акнун
-  умуман донишҷӯ илова карда наметавонад, пас он миёнафзор маънӣ надошт.
-  ⚠️ `User.can_add_students` ва `PUT /users/:id/toggle-add-students` мемонанд,
-  вале амалан таъсир надоранд — қарори нест кардани онҳо боқӣ мондааст
+- `requireCanAddStudents`, `User.can_add_students` ва `PUT /users/:id/toggle-add-students`
+  пурра нест карда шуданд — mentor умуман донишҷӯ илова карда наметавонад
+- 🆕 `User.employee_id` (@unique) — пайванди ҳисоби mentor ба сабти `Employee`.
+  Бе он «ҷадвали дарсҳои ХУДи муаллим»-ро муайян кардан мумкин набуд, чун
+  `TimetableEntry.mentor_id` ба `Employee` ишора мекунад, на ба `User`.
+  Дар JWT низ ҳаст. Агар пайваст набошад, `GET /timetable` рӯйхати холӣ медиҳад
 - 🐛 `/students/me*` барои корбари нақши student, ки ба профили Student пайваст
   нест (`student_id: null`), 500 медод — акнун 404
 

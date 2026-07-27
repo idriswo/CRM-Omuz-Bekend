@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addDays } from "date-fns";
 import { prisma } from "../../utils/prisma";
+import { AuthRequest } from "../../middlewares/auth.middleware";
+import { ROLES } from "../../constants/roles";
 
 function getRange(view: string, dateStr?: string) {
   const base = dateStr ? new Date(dateStr) : new Date();
@@ -14,13 +16,21 @@ function getRange(view: string, dateStr?: string) {
   }
 }
 
-export const getTimetable = async (req: Request, res: Response) => {
+export const getTimetable = async (req: AuthRequest, res: Response) => {
   const { view = "week", date, group_id, mentor_id } = req.query;
   const { start, end } = getRange(String(view), date as string | undefined);
 
   const where: any = {};
   if (group_id) where.group_id = Number(group_id);
   if (mentor_id) where.mentor_id = Number(mentor_id);
+
+  // mentor танҳо дарсҳои ХУДашро мебинад — филтр аз токен меояд, на аз query,
+  // вагарна ӯ бо ?mentor_id= ҷадвали ҳамкоронашро дида метавонист.
+  if (req.user?.role === ROLES.MENTOR) {
+    // Агар ҳисоби mentor ба сабти Employee пайваст набошад, дарс надорад
+    if (!req.user.employee_id) return res.json([]);
+    where.mentor_id = req.user.employee_id;
+  }
 
   const entries = await prisma.timetableEntry.findMany({ where });
 
@@ -41,9 +51,14 @@ export const getTimetable = async (req: Request, res: Response) => {
   res.json(result);
 };
 
-export const getTimetableEntryById = async (req: Request, res: Response) => {
+export const getTimetableEntryById = async (req: AuthRequest, res: Response) => {
   const entry = await prisma.timetableEntry.findUnique({ where: { id: Number(req.params.id) } });
   if (!entry) return res.status(404).json({ message: "Дарс ёфт нашуд" });
+
+  // Дарси ҳамкор барои mentor 404 медиҳад, на 403 — то мавҷудияти он ошкор нашавад
+  if (req.user?.role === ROLES.MENTOR && entry.mentor_id !== req.user.employee_id) {
+    return res.status(404).json({ message: "Дарс ёфт нашуд" });
+  }
   res.json(entry);
 };
 

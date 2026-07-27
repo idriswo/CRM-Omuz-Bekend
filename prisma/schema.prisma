@@ -195,6 +195,7 @@ model Employee {
   email       String?
   mentor_level      MentorLevel?
   mentor_groups     Group[]       @relation("GroupMentors")
+  user              User?         // ҳисоби вуруди ин корманд (агар role=mentor дошта бошад)
   timetable_entries TimetableEntry[]
   salaries          Salary[]
   avans             Avans[]
@@ -314,10 +315,13 @@ model User {
   role              Role?    @relation(fields: [role_id], references: [id])
   branch_id         Int?
   // Агар role=student бошад, ин ба профили Student пайваст мешавад
-  student_id        Int?     @unique
-  student           Student? @relation(fields: [student_id], references: [id])
-  // Танҳо барои role=admin маъно дорад: superadmin/director метавонанд ин имконро хомӯш/фаъол кунанд
-  can_add_students  Boolean  @default(true)
+  student_id        Int?      @unique
+  student           Student?  @relation(fields: [student_id], references: [id])
+  // Агар role=mentor бошад, ин ба сабти кадрии Employee пайваст мешавад.
+  // Бе он «ҷадвали дарсҳои ХУДи муаллим»-ро муайян кардан мумкин нест —
+  // TimetableEntry.mentor_id ба Employee ишора мекунад, на ба User.
+  employee_id       Int?      @unique
+  employee          Employee? @relation(fields: [employee_id], references: [id])
   // true барои ҳисобҳое, ки паролашон аз тарафи система сохта ва бо email фиристода шудааст.
   // То иваз накардани парол корбар ба ягон бахши система дастрасӣ надорад.
   must_change_password Boolean @default(false)

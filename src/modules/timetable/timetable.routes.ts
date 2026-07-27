@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { logAction } from "../../middlewares/log.middleware";
 import { authorize } from "../../middlewares/rbac.middleware";
-import { MANAGEMENT_ROLES } from "../../constants/roles";
+import { MANAGEMENT_ROLES, TEACHING_ROLES } from "../../constants/roles";
 import {
   getTimetable,
   getTimetableEntryById,
@@ -11,7 +11,9 @@ import {
 } from "./timetable.controller";
 
 const router = Router();
-router.use(authorize(...MANAGEMENT_ROLES));
+// Дидан — mentor низ (танҳо дарсҳои худаш, филтр дар controller).
+// Сохтан/тағйир/нест — танҳо superadmin/director.
+router.use(authorize(...TEACHING_ROLES));
 
 /**
  * @openapi
@@ -33,7 +35,7 @@ router.use(authorize(...MANAGEMENT_ROLES));
  *     responses: { 201: { description: Сохта шуд } }
  */
 router.get("/", getTimetable);
-router.post("/", logAction("TimetableEntry", "create"), createTimetableEntry);
+router.post("/", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "create"), createTimetableEntry);
 
 /**
  * @openapi
@@ -58,7 +60,7 @@ router.post("/", logAction("TimetableEntry", "create"), createTimetableEntry);
  *     responses: { 200: { description: OK } }
  */
 router.get("/:id", getTimetableEntryById);
-router.put("/:id", logAction("TimetableEntry", "update"), updateTimetableEntry);
-router.delete("/:id", logAction("TimetableEntry", "delete"), deleteTimetableEntry);
+router.put("/:id", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "update"), updateTimetableEntry);
+router.delete("/:id", authorize(...MANAGEMENT_ROLES), logAction("TimetableEntry", "delete"), deleteTimetableEntry);
 
 export default router;

@@ -31,7 +31,9 @@ const mentorRoleId = roles.find(r => r.name === "mentor").id;
 
 | Бахш | director | superadmin | mentor | student |
 |---|---|---|---|---|
-| Branches, Courses, Leads, Employees, Timetable | ✅ | ✅ | ❌ | ❌ |
+| Branches, Courses, Leads, Employees | ✅ | ✅ | ❌ | ❌ |
+| **Timetable — дидан** (mentor танҳо дарсҳои ХУДаш) | ✅ | ✅ | ✅ | ❌ |
+| Timetable — сохтан/тағйир/нест | ✅ | ✅ | ❌ | ❌ |
 | Dashboard, Email | ✅ | ✅ | ❌ | ❌ |
 | Users, Roles, Permissions, Logs | ✅ | ✅ | ❌ | ❌ |
 | **Гурӯҳҳо — дидан** (list, :id, stats, schedule) | ✅ | ✅ | ✅ | ✅ |
@@ -65,8 +67,39 @@ const mentorRoleId = roles.find(r => r.name === "mentor").id;
 Пас дар UI ин майдонҳоро **шартан** нишон дод — `if (data.total_salaries !== undefined)`.
 Вагарна барои superadmin `undefined` намоён мешавад.
 
-`PUT /users/:id/toggle-add-students` танҳо барои нақши `mentor` кор мекунад — барои дигарон `400`.
-⚠️ Аммо mentor акнун донишҷӯ илова карда наметавонад, пас ин танзим амалан таъсир надорад.
+### Кӣ киро сохта метавонад
+
+| Созанда | Метавонад созад/нест кунад |
+|---|---|
+| **director** | superadmin, mentor, student |
+| **superadmin** | mentor, student |
+| mentor, student | ҳеҷ кас (ба `/api/users` дастрасӣ надоранд) |
+
+Ҳеҷ кас нақши `director`-ро сохта наметавонад — он танҳо тавассути seed сохта мешавад.
+
+### ❌ `PUT /users/:id/toggle-add-students` НЕСТ карда шуд
+
+Endpoint `404` медиҳад ва майдони `can_add_students` аз ҷавоби `/api/users` нест шуд.
+Онро аз frontend бароред.
+
+### 🆕 `employee_id` — пайванди mentor ба корманд
+
+Барои он ки mentor **ҷадвали дарсҳои ХУДашро** бинад, ҳисоби ӯ бояд ба сабти
+`Employee` пайваст бошад — `TimetableEntry.mentor_id` ба `Employee` ишора мекунад, на ба `User`.
+
+Ҳангоми сохтани mentor `employee_id` фиристед:
+```
+POST /api/users
+{ "email": "muallim@gmail.com", "full_name": "Салим", "role_id": <mentor>, "employee_id": 7 }
+```
+Ё баъдтар: `PUT /api/users/:id { "employee_id": 7 }`
+
+- `404` агар корманд набошад · `409` агар он корманд аллакай ҳисоб дошта бошад · `400` агар `employee_id` нодуруст бошад
+- Агар пайваст **набошад**, `GET /api/timetable` барои mentor **рӯйхати холӣ** медиҳад (на хато)
+- `?mentor_id=` барои mentor нодида гирифта мешавад — ӯ ҷадвали ҳамкорро дида наметавонад
+- `GET /api/timetable/:id` барои дарси ҳамкор `404` медиҳад
+
+Дар формаи сохтани mentor як майдони интихоби корманд гузоред (аз `GET /api/employees`).
 
 ## Он чи бояд НЕСТ карда шавад
 

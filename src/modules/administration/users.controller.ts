@@ -3,9 +3,10 @@ import bcrypt from "bcrypt";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { AuthRequest } from "../../middlewares/auth.middleware";
-import { ROLE_CREATE_MATRIX, ROLES, RoleName } from "../../constants/roles";
+import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
 import { normalizePhone } from "../../utils/phone";
 import { normalizeEmail } from "../../utils/email";
+import { toId } from "../../utils/input";
 import { generateTempPassword } from "../../utils/password";
 import { sendEmail, credentialsEmail } from "../../utils/mailer";
 
@@ -49,7 +50,7 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
 };
 
 export const createUser = async (req: AuthRequest, res: Response) => {
-  const { email, phone, password, full_name, role_id, branch_id } = req.body ?? {};
+  const { email, phone, password, full_name, role_id, branch_id, employee_id } = req.body ?? {};
 
   // email логини вуруд аст — бинобар ин ҳамон нормализатсияе мегузарад,
   // ки login истифода мебарад (auth.controller.ts)
@@ -77,6 +78,18 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     return res.status(403).json({ message: `Шумо ҳуқуқ надоред нақши "${targetRole?.name}"-ро созед` });
   }
 
+  // Барои mentor: пайванд ба сабти кадрии Employee, то ҷадвали дарсҳои
+  // худашро бинад (TimetableEntry.mentor_id ба Employee ишора мекунад)
+  const employeeId = toId(employee_id);
+  if (employee_id !== undefined && !employeeId) {
+    return res.status(400).json({ message: "employee_id нодуруст аст" });
+  }
+  if (employeeId) {
+    const employee = await prisma.employee.findUnique({ where: { id: employeeId }, include: { user: true } });
+    if (!employee) return res.status(404).json({ message: "Корманд ёфт нашуд" });
+    if (employee.user) return res.status(409).json({ message: "Ин корманд аллакай ҳисоб дорад" });
+  }
+
   const generated = password === undefined;
   const plainPassword = generated ? generateTempPassword() : (password as string);
   const hashed = await bcrypt.hash(plainPassword, 10);
@@ -89,6 +102,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       full_name,
       role_id: Number(role_id),
       branch_id: branch_id ? Number(branch_id) : undefined,
+      employee_id: employeeId,
       // Пароли сохташуда тавассути email меравад — то ивази он ҳисоб маҳдуд аст
       must_change_password: generated,
     },
@@ -116,7 +130,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 };
 
 export const updateUser = async (req: AuthRequest, res: Response) => {
-  const { email, phone, full_name, role_id, branch_id } = req.body ?? {};
+  const { email, phone, full_name, role_id, branch_id, employee_id } = req.body ?? {};
 
   // email логин аст — иваз кардани он мумкин, вале бояд дуруст бошад
   if (email !== undefined && !normalizeEmail(email)) {
@@ -140,6 +154,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     data: {
       email: normalizeEmail(email),
       phone: normalizePhone(phone),
+      employee_id: toId(employee_id),
       full_name,
       role_id: role_id ? Number(role_id) : undefined,
       branch_id: branch_id ? Number(branch_id) : undefined,
@@ -162,18 +177,4 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   res.json({ success: true });
 };
 
-// PUT /users/:id/toggle-add-students — фақат superadmin/director метавонанд имкони
-// "илова кардани донишҷӯ"-и як mentor-ро фаъол/хомӯш кунанд
-export const toggleCanAddStudents = async (req: AuthRequest, res: Response) => {
-  const target = await prisma.user.findUnique({ where: { id: Number(req.params.id) }, include: { role: true } });
-  if (!target) return res.status(404).json({ message: "Корбар ёфт нашуд" });
-  if (target.role?.name !== ROLES.MENTOR) {
-    return res.status(400).json({ message: "Ин танзим танҳо барои корбарони mentor маъно дорад" });
-  }
-
-  const user = await prisma.user.update({
-    where: { id: target.id },
-    data: { can_add_students: !target.can_add_students },
-  });
-  res.json({ id: user.id, can_add_students: user.can_add_students });
-};
+// toggleCanAddStudents нест карда шуд — ниг. эзоҳ дар administration.routes.ts

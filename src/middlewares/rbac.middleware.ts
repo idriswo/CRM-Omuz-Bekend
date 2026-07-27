@@ -1,6 +1,6 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "./auth.middleware";
-import { RoleName } from "../constants/roles";
+import { ROLES, RoleName } from "../constants/roles";
 import { prisma } from "../utils/prisma";
 
 // Танҳо ба нақшҳои дар рӯйхат буда иҷозат медиҳад
@@ -24,11 +24,12 @@ export function selfStudentOr(...allowedRoles: RoleName[]) {
   };
 }
 
-// Танҳо барои POST /students: admin бояд can_add_students=true дошта бошад (superadmin/director ҳамеша иҷозат доранд)
+// Танҳо барои POST /students: mentor бояд can_add_students=true дошта бошад
+// (superadmin/director ҳамеша иҷозат доранд)
 export async function requireCanAddStudents(req: AuthRequest, res: Response, next: NextFunction) {
   const role = req.user?.role as RoleName | undefined;
-  if (role === "superadmin" || role === "director") return next();
-  if (role !== "admin") return res.status(403).json({ message: "Дастрасӣ манъ аст" });
+  if (role === ROLES.SUPERADMIN || role === ROLES.DIRECTOR) return next();
+  if (role !== ROLES.MENTOR) return res.status(403).json({ message: "Дастрасӣ манъ аст" });
 
   const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
   if (!user?.can_add_students) {

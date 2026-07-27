@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { prisma } from "../../utils/prisma";
 import { getPagination, buildEnvelope, buildOrderBy } from "../../utils/pagination";
 import { AuthRequest } from "../../middlewares/auth.middleware";
-import { ROLE_CREATE_MATRIX, RoleName } from "../../constants/roles";
+import { ROLE_CREATE_MATRIX, ROLES, RoleName } from "../../constants/roles";
 import { normalizePhone } from "../../utils/phone";
 import { normalizeEmail } from "../../utils/email";
 import { generateTempPassword } from "../../utils/password";
@@ -162,12 +162,13 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   res.json({ success: true });
 };
 
-// PUT /users/:id/toggle-add-students — фақат superadmin/director метавонанд имкони "илова кардани донишҷӯ"-и як admin-ро фаъол/хомӯш кунанд
+// PUT /users/:id/toggle-add-students — фақат superadmin/director метавонанд имкони
+// "илова кардани донишҷӯ"-и як mentor-ро фаъол/хомӯш кунанд
 export const toggleCanAddStudents = async (req: AuthRequest, res: Response) => {
   const target = await prisma.user.findUnique({ where: { id: Number(req.params.id) }, include: { role: true } });
   if (!target) return res.status(404).json({ message: "Корбар ёфт нашуд" });
-  if (target.role?.name !== "admin") {
-    return res.status(400).json({ message: "Ин танзим танҳо барои корбарони admin маъно дорад" });
+  if (target.role?.name !== ROLES.MENTOR) {
+    return res.status(400).json({ message: "Ин танзим танҳо барои корбарони mentor маъно дорад" });
   }
 
   const user = await prisma.user.update({

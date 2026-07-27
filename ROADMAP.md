@@ -35,6 +35,16 @@ Osonsms пулакӣ баромад — тамоми фиристодан ба *
 - ⚠️ Gmail ~500 email/рӯз. Барои фиристодани оммавӣ дар оянда SendGrid/Resend/Mailgun лозим — танҳо `createTransport` дар `src/utils/mailer.ts` иваз мешавад
 - 📄 `Omuz-CRM-Backend-API-Guide.md` барои бахшҳои Auth ва SMS **кӯҳна шудааст** ва навсозӣ талаб мекунад
 
+## Нақши admin → mentor (2026-07-27)
+
+- `ROLES.ADMIN` → `ROLES.MENTOR`, қиммат `"admin"` → `"mentor"`
+- Ҳудуди дастрасӣ бетағйир монд — танҳо ном иваз шуд
+- `prisma/rename-admin-role.ts` барои базаи мавҷуда (`--apply` барои навиштан).
+  id-и нақш бетағйир мемонад, пас корбарон дастрасиро гум намекунанд.
+  Агар ҳам `admin`, ҳам `mentor` мавҷуд бошанд, скрипт коре намекунад ва огоҳ мекунад.
+- ⚠️ Нақши `mentor` бо `Employee.position = "Mentor"` ва модели `MentorLevel`
+  алоқаманд НЕСТ — онҳо маълумоти кадрӣ мебошанд, на ҳуқуқи дастрасӣ
+
 ## Phase 1 — Auth (`/auth`)
 - [x] Prisma model `User` (+ `refresh_token` барои иваз кардани токен)
 - [x] ~~`POST /auth/register`~~ — нест карда шуд (2026-07-26): сабти кушода имкони сохтани ҳисобҳои беохир ва тафтиши рақамҳои телефонро медод. Ҳисоб танҳо аз `POST /users` ё `POST /students/:id/invite` сохта мешавад

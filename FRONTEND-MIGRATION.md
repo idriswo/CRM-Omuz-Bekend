@@ -8,6 +8,40 @@ Backend-и Omuz CRM пурра иваз шуд: **вуруд ба система
 
 Ҳамаи тағйиротҳо дар backend аллакай тайёр ва санҷидашударо истифода бар — шаклҳои JSON дар поён аз сервери зинда гирифта шудаанд, тахминӣ нестанд.
 
+## 0. Нақши `admin` → `mentor`
+
+Дар система 4 нақш ҳаст. Нақши `admin` акнун **`mentor`** ном дорад:
+
+| Пеш | Акнун |
+|---|---|
+| `director` | `director` — бетағйир |
+| `superadmin` | `superadmin` — бетағйир |
+| **`admin`** | **`mentor`** |
+| `student` | `student` — бетағйир |
+
+Ҳама ҷое, ки дар frontend сатри `"admin"` навишта шудааст (муқоисаи нақш, номи нақш дар UI, шартҳои `v-if`/`if`), ба `"mentor"` иваз кун.
+
+⚠️ **`role.id`-ро hardcode накун.** Рӯйхати нақшҳоро аз `GET /api/roles` гир ва `id`-ро аз рӯи `name` ёб:
+```js
+const roles = await api.get("/api/roles");
+const mentorRoleId = roles.find(r => r.name === "mentor").id;
+```
+
+Ҳудуди дастрасӣ (санҷидашуда):
+
+| Бахш | director | superadmin | mentor | student |
+|---|---|---|---|---|
+| Branches, Courses, Leads, Students, Employees, Groups, Timetable | ✅ | ✅ | ✅ | ❌ |
+| Dashboard, Email | ✅ | ✅ | ✅ | ❌ |
+| Users, Roles, Permissions, Logs | ✅ | ✅ | ❌ | ❌ |
+| Payments, Accounting | ✅ | ❌ | ❌ | ❌ |
+| Notifications | ✅ | ✅ | ✅ | ✅ |
+| `/students/me*` (профили худӣ) | ❌ | ❌ | ❌ | ✅ |
+
+**Director ҳама ҷо дастрасӣ дорад** ва метавонад `superadmin`, `mentor`, `student` созад ва нест кунад. `superadmin` танҳо `mentor` ва `student` сохта метавонад.
+
+`PUT /users/:id/toggle-add-students` танҳо барои нақши `mentor` кор мекунад — барои дигарон `400`.
+
 ## Он чи бояд НЕСТ карда шавад
 
 1. **Ҳама ҷое, ки рақами телефон барои вуруд истифода мешавад** — майдони `phone` дар экрани login, маскаи рақам, тафтиши формати рақам ҳангоми вуруд.
@@ -153,7 +187,7 @@ POST /api/auth/reset-password
 
 ---
 
-## 3. Сохтани ҳисоб (superadmin / admin / mentor)
+## 3. Сохтани ҳисоб (superadmin / mentor / student)
 
 ```
 POST /api/users                       (токени director ё superadmin)
@@ -332,3 +366,4 @@ Header-и `Retry-After` низ меояд. Дар UI вақти интизори
 - [ ] Коркарди `429` бо `retry_after_seconds`
 - [ ] `limit` ≤ 200
 - [ ] Ҳамаи матнҳои «SMS», «рақами телефон» дар контексти вуруд → «email»
+- [ ] Нақши `"admin"` → `"mentor"` дар ҳама ҷо; `role.id`-ро аз `GET /api/roles` гир, hardcode накун

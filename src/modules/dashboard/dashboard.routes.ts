@@ -14,7 +14,7 @@ import {
 } from "./dashboard.controller";
 
 const router = Router();
-router.use(authorize(ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR));
+router.use(authorize(ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR));
 
 /**
  * @openapi

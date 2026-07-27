@@ -12,7 +12,9 @@ async function main() {
     if (!role) role = await prisma.role.create({ data: { name } });
     roleMap[name] = role.id;
   }
-  console.log("Роли: student, admin, superadmin, director — тайёр шуданд.");
+  // Аз ROLES гирифта мешавад, на сатри статикӣ — вагарна пас аз ивази номи
+  // нақш лог дурӯғ мегуфт (маҳз ҳамин ҳангоми admin -> mentor рӯй дод)
+  console.log(`Нақшҳо: ${Object.values(ROLES).join(", ")} — тайёр шуданд.`);
 
   // Бутстрап: аввалин director, то касе тавонад аз /users дигар корбаронро идора кунад.
   // email логини вуруд аст ва ҳамон нормализатсияе мегузарад, ки login истифода

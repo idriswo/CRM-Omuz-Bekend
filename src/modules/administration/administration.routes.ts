@@ -53,7 +53,7 @@ router.delete("/users/:id", logAction("User", "delete"), deleteUser);
  * /users/{id}/toggle-add-students:
  *   put:
  *     tags: [Administration]
- *     summary: Фаъол/хомӯш кардани иҷозати як admin барои илова кардани донишҷӯ
+ *     summary: Фаъол/хомӯш кардани иҷозати як mentor барои илова кардани донишҷӯ
  *     security: [{ bearerAuth: [] }]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: integer } }]
  *     responses: { 200: { description: OK } }

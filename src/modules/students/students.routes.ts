@@ -35,7 +35,7 @@ import {
 } from "./students.controller";
 
 const router = Router();
-const STAFF = [ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.DIRECTOR] as const;
+const STAFF = [ROLES.MENTOR, ROLES.SUPERADMIN, ROLES.DIRECTOR] as const;
 
 /**
  * @openapi

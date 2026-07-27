@@ -9,6 +9,7 @@ import { authMiddleware } from "./middlewares/auth.middleware";
 import { requirePasswordChanged } from "./middlewares/passwordChange.middleware";
 import { swaggerSpec } from "./swagger";
 import { errorHandler } from "./middlewares/error.middleware";
+import { mailEnabled } from "./utils/mailer";
 
 const app = express();
 
@@ -21,7 +22,12 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/", (_req, res) => res.json({ name: "Omuz CRM Backend API", status: "running" }));
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+// `mail` нишон медиҳад, ки GMAIL_USER/GMAIL_APP_PASSWORD гузошта шудаанд ё не.
+// Бе ин аз берун фаҳмидан мумкин набуд, ки чаро email намеравад — танҳо аз
+// логи сервер. Худи қимматҳо ошкор намешаванд.
+app.get("/health", (_req, res) =>
+  res.json({ status: "ok", mail: mailEnabled() ? "configured" : "stub" })
+);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // /auth берун аз requirePasswordChanged аст — вагарна корбаре, ки бояд

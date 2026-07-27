@@ -21,7 +21,14 @@ import nodemailer, { Transporter } from "nodemailer";
  * иҷрои тест лимити рӯзонаро сарф мекард.
  */
 
-export const mailEnabled = () => Boolean(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+/**
+ * Google App Password-ро дар шакли "abcd efgh ijkl mnop" нишон медиҳад ва
+ * одатан ҳамон тавр нусхабардорӣ мешавад. SMTP фосиларо қабул намекунад,
+ * бинобар ин ин ҷо тоза мешавад — то корбар бо форматкунӣ ҷанг накунад.
+ */
+const appPassword = () => (process.env.GMAIL_APP_PASSWORD || "").replace(/\s/g, "");
+
+export const mailEnabled = () => Boolean(process.env.GMAIL_USER && appPassword());
 
 let transporter: Transporter | null = null;
 
@@ -31,7 +38,7 @@ function getTransporter(): Transporter {
       service: "gmail",
       auth: {
         user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD,
+        pass: appPassword(),
       },
     });
   }

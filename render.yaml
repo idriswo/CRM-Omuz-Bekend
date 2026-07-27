@@ -4,7 +4,11 @@ services:
     env: node
     plan: free
     buildCommand: npm install --include=dev && npx prisma generate && npm run build
-    startCommand: npx prisma db push && npx prisma db seed && npm start
+    # `prisma db push` набояд дар production кор кунад: он таърихи миграция
+    # надорад ва ҳангоми тағйири схема бо маълумоти мавҷуда деплойро мешиканад
+    # (маҳз ҳамин ҳангоми илова кардани User.email рӯй дод).
+    # `migrate deploy` танҳо миграцияҳои нави татбиқнашударо иҷро мекунад.
+    startCommand: npx prisma migrate deploy && npx prisma db seed && npm start
     envVars:
       - key: DATABASE_URL
         fromDatabase:

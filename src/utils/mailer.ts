@@ -1,33 +1,34 @@
 import nodemailer, { Transporter } from "nodemailer";
+import { google } from "googleapis";
 
 /**
- * Фиристодани email. Ду провайдер дастгирӣ мешавад — кадомаш интихоб шудан
- * аз .env вобаста аст (ниг. `mailProvider()`):
+ * Фиристодани email. Ду роҳи расондан дастгирӣ мешавад — кадомаш интихоб
+ * шудан аз .env вобаста аст (ниг. `mailProvider()`):
  *
- *   brevo — HTTP API, порти 443. Провайдери асосӣ барои production.
- *     BREVO_API_KEY   — калид аз brevo.com → SMTP & API → API Keys (бо "xkeysib-" сар мешавад)
- *     MAIL_FROM_EMAIL — суроғаи фиристанда. Бояд дар Brevo ҳамчун sender ТАСДИҚ шуда бошад
- *                       (Senders → Add a sender → пайванди тасдиқ ба ҳамон почта меояд).
- *                       Суроғаи оддии Gmail мешавад — домени худӣ лозим нест.
- *     MAIL_FROM_NAME  — номи фиристанда (пешфарз "Omuz CRM")
+ *   gmail-api — Gmail API аз болои HTTPS (порти 443). Роҳи асосӣ.
+ *     GOOGLE_CLIENT_ID     — аз Google Cloud Console → APIs & Services → Credentials
+ *     GOOGLE_CLIENT_SECRET — ҳамон ҷо
+ *     GOOGLE_REFRESH_TOKEN — як бор бо `npx ts-node scripts/gmail-oauth.ts` гирифта мешавад
+ *     MAIL_FROM_EMAIL      — суроғаи Gmail, ки паём аз номи он меравад
+ *     MAIL_FROM_NAME       — номи фиристанда (пешфарз "Omuz CRM")
  *
- *   gmail — SMTP, порти 587. Танҳо барои dev дар компютери худӣ.
+ *   gmail-smtp — ҳамон Gmail, вале аз болои SMTP (порти 587). Танҳо барои dev.
  *     GMAIL_USER         — суроғаи Gmail
  *     GMAIL_APP_PASSWORD — App Password-и 16-аломата (Google Account → Security →
  *                          2-Step Verification → App passwords). Пароли оддӣ кор намекунад.
  *
- * ⚠️ Чаро Gmail дар Render кор намекунад: плани Free-и Render трафики
- * бароварданиро дар портҳои 25/465/587 мебандад, бинобар ин ҳар пайванди SMTP
- * дар production ноком мешавад — гарчанде локалӣ бе мушкил кор мекунад. Brevo
- * тавассути HTTPS мефиристад, ки баста нест.
+ * ⚠️ Чаро ду роҳ барои ҳамон як почта: плани Free-и Render трафики
+ * бароварданиро дар портҳои 25/465/587 мебандад, бинобар ин SMTP дар
+ * production ҳамеша ноком мешавад — гарчанде локалӣ бе мушкил кор мекунад.
+ * Gmail API ҳамон паёмро аз болои HTTPS мефиристад, ки баста нест.
  *
- * Чаро маҳз Brevo: ройгон 300 email/рӯз ва барои фиристодан ба ҳар кас домени
- * худӣ лозим нест — тасдиқи як суроға кифоя аст. (Барои муқоиса: Resend бе
- * домени тасдиқшуда танҳо ба email-и худи соҳиби ҳисоб мефиристад.)
+ * Чаро маҳз Gmail API, на провайдери сеюм: домен лозим нест, пардохт нест,
+ * тасдиқи рақами телефон нест — ҳисоби Gmail-и мавҷуда кифоя аст. Лимит
+ * ~500 email дар рӯз, ҳамон лимити оддии Gmail.
  *
- * Агар ҳеҷ як провайдер танзим нашуда бошад, барнома дар режими stub кор
- * мекунад: паёмҳо танҳо ба лог мераванд. Ин барои тест лозим аст — вагарна
- * ҳар иҷрои тест лимити рӯзонаро сарф мекард.
+ * Агар ҳеҷ як роҳ танзим нашуда бошад, барнома дар режими stub кор мекунад:
+ * паёмҳо танҳо ба лог мераванд. Ин барои тест лозим аст — вагарна ҳар иҷрои
+ * тест лимити рӯзонаро сарф мекард.
  */
 
 /**
@@ -37,15 +38,22 @@ import nodemailer, { Transporter } from "nodemailer";
  */
 const appPassword = () => (process.env.GMAIL_APP_PASSWORD || "").replace(/\s/g, "");
 
-export type MailProvider = "brevo" | "gmail" | "stub";
+const oauthConfigured = () =>
+  Boolean(
+    process.env.GOOGLE_CLIENT_ID &&
+      process.env.GOOGLE_CLIENT_SECRET &&
+      process.env.GOOGLE_REFRESH_TOKEN
+  );
+
+export type MailProvider = "gmail-api" | "gmail-smtp" | "stub";
 
 /**
- * Brevo аввалин аст: агар ҳарду танзим шуда бошанд, ҳамон интихоб мешавад,
- * то дар production тасодуфан ба SMTP-и басташуда наафтем.
+ * Gmail API аввалин аст: агар ҳарду танзим шуда бошанд, ҳамон интихоб
+ * мешавад, то дар production тасодуфан ба SMTP-и басташуда наафтем.
  */
 export function mailProvider(): MailProvider {
-  if (process.env.BREVO_API_KEY) return "brevo";
-  if (process.env.GMAIL_USER && appPassword()) return "gmail";
+  if (oauthConfigured()) return "gmail-api";
+  if (process.env.GMAIL_USER && appPassword()) return "gmail-smtp";
   return "stub";
 }
 
@@ -74,43 +82,73 @@ export interface MailMessage {
   text?: string;
 }
 
-/**
- * Танҳо ҳамин функсия ба API-и Brevo вобаста аст. Барои гузаштан ба
- * провайдери дигар (Resend, SendGrid) ҳаминро иваз кардан кифоя аст.
- */
-async function sendViaBrevo({ to, subject, html, text }: MailMessage): Promise<void> {
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": process.env.BREVO_API_KEY as string,
-      "content-type": "application/json",
-      accept: "application/json",
-    },
-    body: JSON.stringify({
-      sender: {
-        name: process.env.MAIL_FROM_NAME || "Omuz CRM",
-        email: process.env.MAIL_FROM_EMAIL,
-      },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-      textContent: text,
-    }),
-    // Бе ин як дархости овезон сохтани корбарро дар frontend мунтазир мемонад
-    signal: AbortSignal.timeout(15_000),
-  });
+const fromEmail = () => process.env.MAIL_FROM_EMAIL || process.env.GMAIL_USER || "";
+const fromName = () => process.env.MAIL_FROM_NAME || "Omuz CRM";
 
-  if (!res.ok) {
-    // Матни хатои Brevo фаҳмо аст ("sender not valid", "unauthorized" ва ғ.) —
-    // онро тавре мегузорем, то дар email_error ба корманд расад
-    throw new Error(`Brevo ${res.status}: ${(await res.text()).slice(0, 300)}`);
+/** Сарлавҳаи ғайри-ASCII (тоҷикӣ) бояд тибқи RFC 2047 кодкунӣ шавад. */
+const encodeHeader = (value: string) =>
+  `=?UTF-8?B?${Buffer.from(value, "utf8").toString("base64")}?=`;
+
+/** MIME талаб мекунад, ки сатрҳои base64 аз 76 аломат дарозтар набошанд. */
+const wrap76 = (b64: string) => (b64.match(/.{1,76}/g) || []).join("\r\n");
+
+/**
+ * Паёми хом дар формати RFC 822. Ду қисм — матнӣ ва HTML — то почтаҳое,
+ * ки HTML нишон намедиҳанд, боз ҳам логин ва паролро бинанд.
+ */
+function buildRawMessage({ to, subject, html, text }: MailMessage): string {
+  const boundary = `omuz_${Date.now().toString(36)}`;
+  return [
+    `From: ${encodeHeader(fromName())} <${fromEmail()}>`,
+    `To: ${to}`,
+    `Subject: ${encodeHeader(subject)}`,
+    "MIME-Version: 1.0",
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(Buffer.from(text ?? "", "utf8").toString("base64")),
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    wrap76(Buffer.from(html, "utf8").toString("base64")),
+    `--${boundary}--`,
+  ].join("\r\n");
+}
+
+/**
+ * Танҳо ҳамин функсия ба Gmail API вобаста аст. `refresh_token` худаш ба
+ * access token иваз мешавад — googleapis инро дохилӣ мекунад ва access
+ * token-и кӯҳнашударо нав мекунад.
+ */
+async function sendViaGmailApi(message: MailMessage): Promise<void> {
+  const auth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+  auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+
+  try {
+    await google.gmail({ version: "v1", auth }).users.messages.send({
+      userId: "me",
+      requestBody: {
+        raw: Buffer.from(buildRawMessage(message), "utf8").toString("base64url"),
+      },
+    });
+  } catch (err: any) {
+    // Матни хатои Google фаҳмо аст ("invalid_grant", "insufficient permissions"
+    // ва ғ.) — онро тавре мегузорем, то дар email_error ба корманд расад
+    const detail = err?.response?.data?.error_description || err?.message || String(err);
+    throw new Error(`Gmail API: ${String(detail).slice(0, 300)}`);
   }
 }
 
-async function sendViaGmail({ to, subject, html, text }: MailMessage): Promise<void> {
-  const fromName = process.env.MAIL_FROM_NAME || "Omuz CRM";
+async function sendViaGmailSmtp({ to, subject, html, text }: MailMessage): Promise<void> {
   await getTransporter().sendMail({
-    from: `"${fromName}" <${process.env.GMAIL_USER}>`,
+    from: `"${fromName()}" <${process.env.GMAIL_USER}>`,
     to,
     subject,
     html,
@@ -126,10 +164,10 @@ export async function sendEmail({ to, subject, html, text }: MailMessage): Promi
   const message: MailMessage = { to, subject, html, text: text ?? stripHtml(html) };
 
   switch (mailProvider()) {
-    case "brevo":
-      return sendViaBrevo(message);
-    case "gmail":
-      return sendViaGmail(message);
+    case "gmail-api":
+      return sendViaGmailApi(message);
+    case "gmail-smtp":
+      return sendViaGmailSmtp(message);
     default:
       console.log(`[MAIL stub] -> ${to} | ${subject}\n${message.text}`);
   }

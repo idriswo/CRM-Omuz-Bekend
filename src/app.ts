@@ -22,8 +22,8 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.get("/", (_req, res) => res.json({ name: "Omuz CRM Backend API", status: "running" }));
-// `mail` нишон медиҳад, ки кадом провайдер фаъол аст: "brevo" (production),
-// "gmail" (SMTP, танҳо локалӣ) ё "stub" (тамоман танзим нашуда). Бе ин аз
+// `mail` нишон медиҳад, ки кадом роҳ фаъол аст: "gmail-api" (production),
+// "gmail-smtp" (танҳо локалӣ) ё "stub" (тамоман танзим нашуда). Бе ин аз
 // берун фаҳмидан мумкин набуд, ки чаро email намеравад — танҳо аз логи
 // сервер. Худи калидҳо ошкор намешаванд.
 app.get("/health", (_req, res) => res.json({ status: "ok", mail: mailProvider() }));
